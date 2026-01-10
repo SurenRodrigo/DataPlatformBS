@@ -1,0 +1,232 @@
+################################################################################
+# APPBASE APP ENVIRONMENT CONFIGURATION
+################################################################################
+# Environment variables required for the app docker-compose.yaml services
+# Extracted from _env_sample based on actual usage in docker-compose.yaml
+################################################################################
+
+################################################################################
+# PLATFORM CONFIGURATION
+################################################################################
+# IMPORTANT: Service feature toggles are configured in service.yaml at project root
+# See service.yaml for enabling/disabling platform services (hasura, metabase, superset, dagster, nginx)
+# and app services (data-platform-service)
+# 
+# The following env vars are NO LONGER USED for feature toggling:
+#   - WITH_BI, WITH_BI_TOOL, WITH_ALL_BI, WITH_DAGSTER
+# These have been removed. All service enablement is controlled via service.yaml
+
+################################################################################
+# DATABASE CONFIGURATION
+################################################################################
+# Main AppBase Database
+APPBASE_DB_NAME=dataplatform
+APPBASE_DB_NAME_SW=dataplatform_sw
+APPBASE_DB_HOST="${DB_HOST}"
+APPBASE_DB_PORT=5432
+APPBASE_DB_USER="${DB_USER}"
+APPBASE_DB_PASSWORD="${DB_PASSWORD}"
+
+# AppBase Configuration Database  
+APPBASE_CONFIG_DB_HOST="${DB_HOST}"
+APPBASE_CONFIG_DB_PORT=5432
+APPBASE_CONFIG_DB_USER="${DB_USER}"
+APPBASE_CONFIG_DB_PASSWORD="${DB_PASSWORD}"
+APPBASE_CONFIG_DB_NAME=dataplatform
+
+################################################################################
+# HASURA GRAPHQL ENGINE CONFIGURATION
+################################################################################
+HASURA_DB_NAME=hasura
+HASURA_GRAPHQL_ADMIN_SECRET="${HASURA_ADMIN_SECRET}"
+HASURA_URL=http://hasura:8080
+
+################################################################################
+# METABASE BUSINESS INTELLIGENCE CONFIGURATION
+################################################################################
+METABASE_DB_NAME=metabase
+METABASE_USER=admin@admin.com
+METABASE_PASSWORD=admin
+METABASE_URL=http://metabase:3000
+METABASE_USE_SSL=false
+METABASE_APPBASE_DB_HOST="${DB_HOST}"
+
+################################################################################
+# APACHE SUPERSET BUSINESS INTELLIGENCE CONFIGURATION
+################################################################################
+SUPERSET_DB_NAME=superset
+SUPERSET_ADMIN_USER="${SUPERSET_ADMIN_USER}"
+SUPERSET_ADMIN_EMAIL="${SUPERSET_ADMIN_EMAIL}"
+SUPERSET_ADMIN_PASSWORD="${SUPERSET_ADMIN_PASSWORD}"
+SUPERSET_SECRET_KEY="${SUPERSET_SECRET_KEY}"
+SUPERSET_URL=http://superset:8088
+SUPERSET_APPBASE_DB_HOST="${DB_HOST}"
+
+
+
+
+################################################################################
+# DAGSTER DATA ORCHESTRATION CONFIGURATION
+################################################################################
+# Dagster Integration for data pipeline orchestration
+# Note: Dagster enablement is controlled via service.yaml (platform.dagster)
+# The WITH_DAGSTER env var is NO LONGER USED for feature toggling
+DAGSTER_PORT="${DAGSTER_PORT:-3030}"
+DAGSTER_URL=http://dagster-webserver:${DAGSTER_PORT}
+DAGSTER_CODE_LOCATION=/app/dagster_code
+DAGSTER_CODE_LOCATION_NAME=appbase_pipelines
+DAGSTER_ADMIN_USER=admin
+DAGSTER_ADMIN_PASSWORD=admin
+DAGSTER_DB_NAME=dagster
+
+################################################################################
+# APPBASE SYSTEM INITIALIZATION CONFIGURATION
+################################################################################
+APPBASE_INIT_IMAGE=appbase-init:latest
+APPBASE_INIT_LOG_LEVEL=info
+RUN_DB_MIGRATIONS=true
+
+################################################################################
+# APPLICATION SECURITY CONFIGURATION
+################################################################################
+APP_BASE_SECRET="${HASURA_JWT_SECRET}"
+NODE_ENV=development
+
+################################################################################
+# CLIENT APPLICATION CONFIGURATION
+################################################################################
+# These variables are used in the client service but not defined in _env_sample
+# Adding with default values from docker-compose.yaml
+CLIENT_PORT=3001
+CLIENT_BUILD_TARGET=dev 
+
+################################################################################
+# PYAIRBYTE CACHE DATABASE CONFIGURATION
+################################################################################
+# PyAirbyte cache database for storing synced data from external connectors
+# Each connector will have its own schema within this database
+PYAIRBYTE_CACHE_DB_HOST="${DB_HOST}"
+PYAIRBYTE_CACHE_DB_PORT=5432
+PYAIRBYTE_CACHE_DB_USER="${DB_USER}"
+PYAIRBYTE_CACHE_DB_PASSWORD="${DB_PASSWORD}"
+PYAIRBYTE_CACHE_DB_NAME=dataplatform 
+
+PYAIRBYTE_CACHE_SWEDEN_DB_HOST="${DB_HOST}"
+PYAIRBYTE_CACHE_SWEDEN_DB_PORT=5432
+PYAIRBYTE_CACHE_SWEDEN_DB_USER="${DB_USER}"
+PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD="${DB_PASSWORD}"
+PYAIRBYTE_CACHE_SWEDEN_DB_NAME=dataplatform_sw
+
+################################################################################
+# PYAIRBYTE CONNECTOR DYNAMIC CONFIGURATION
+################################################################################
+# Provide per-connector configuration as a JSON object mapping connector name to
+# its configuration object. Each connector's object is passed as the `config`
+# when instantiating the source. Example keys can include api_key, start_date,
+# page_size, etc., depending on the connector's spec.
+#
+# Example (single line JSON string):
+# PYAIRBYTE_CONNECTOR_CONFIGS={"maranics-connector":{"api_key":"xxxxxxxx","start_date":"2024-01-01"},"sample-connector":{}}
+#
+# Notes:
+# - Keep this as a single line or escape newlines for docker-compose env parsing
+# - Secrets should be managed via your secret manager in production
+
+# Uncomment and configure as needed:
+# PYAIRBYTE_CONNECTOR_CONFIGS='{"admmit-connector":{"server":"Admmitdp.database.windows.net", "database":"", "username":"", "password":"", "schema":"dbo"}, "catalyst-connector":{"client_id":"", "client_secret":""}, "catalyst-v1-connector":{"client_id":"", "client_secret":""}, "ditio-kept-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-time-styr-kept-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-time-styr-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "unit4-api-connector":{"username":"", "password":""}, "unit4-ebitapi-connector":{"username":"", "password":""}, "unit4-interimapi-connector":{"username":"", "password":""}, "unit4-invoiceapi-connector":{"username":"", "password":""}, "unit4-liqudityapi-connector":{"username":"", "password":""}, "tqm-api-connector":{"token":""}, "endringer-api-connector":{"username":"", "password":""}, "icore-connector":{"x_api_key":"", "clientid":"","fromAlteredTs":"2025-10-01", "toAlteredTs":"2025-10-30T00:00:00Z"}, "jobylonbi-connector":{"host":"","port":3306,"database":"","username":"","password":"","schema":"","ssl":{"ssl_verify_cert":true,"ssl_verify_identity":true}}, "test_ditio-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "test_tqm-api-connector":{"token":""}}'
+PYAIRBYTE_CONNECTOR_CONFIGS="${PYAIRBYTE_CONNECTOR_CONFIGS}"
+
+################################################################################
+# TEST CONNECTOR CONFIGURATION
+################################################################################
+# Set to true to use test connectors instead of production connectors
+# This affects DBT models and case processing assets
+
+# Ditio Test Connectors
+USE_DITIO_TEST_CONNECTORS=false
+
+# TQM Test Connectors  
+USE_TQM_TEST_CONNECTORS=false
+
+################################################################################
+# NRC SHAREPOINT CONFIGURATION
+################################################################################
+
+SP_CLIENT_ID="${SP_CLIENT_ID}"
+SP_CLIENT_SECRET="${SP_CLIENT_SECRET}"
+SP_SITE_URL="${SP_SITE_URL}"
+SP_FILE_LOCATION="${SP_FILE_LOCATION}"
+HR_FILE_NAME="HR_NRC_INPUTS.xlsx"
+HSE_FILE_NAME="HSE_NRC_INPUTS.xlsx"
+
+SE_SP_CLIENT_ID="${SE_SP_CLIENT_ID}"
+SE_SP_CLIENT_SECRET="${SE_SP_CLIENT_SECRET}"
+SE_SP_TENANT_ID="${SE_SP_TENANT_ID}"
+SE_SP_HOSTNAME="${SE_SP_HOSTNAME}"
+SE_SP_SITE_PATH="${SE_SP_SITE_PATH}"
+SE_SP_DRIVE_NAME="${SE_SP_DRIVE_NAME}"
+SE_SP_SYNC_FILE_PATH="${SE_SP_SYNC_FILE_PATH}"
+SE_SP_SITE_URL="${SE_SP_SITE_URL}"
+SE_SP_FILE_LOCATION="${SE_SP_FILE_LOCATION}"
+SE_DATA_FILE_NAME="${SE_DATA_FILE_NAME}"
+################################################################################
+# GK SHAREPOINT CONFIGURATION
+################################################################################
+GK_SP_CLIENT_ID="${GK_SP_CLIENT_ID}"    
+GK_SP_CLIENT_SECRET="${GK_SP_CLIENT_SECRET}"
+GK_SP_TENANT_ID="${GK_SP_TENANT_ID}"
+GK_SP_HOSTNAME="${GK_SP_HOSTNAME}"
+GK_SP_SITE_PATH="${GK_SP_SITE_PATH}"
+GK_SP_DRIVE_NAME="${GK_SP_DRIVE_NAME}"
+GK_SP_VISMA_SYNC_FILE_PATH="${GK_SP_VISMA_SYNC_FILE_PATH}"
+GK_SP_POTENTIAL_PROJECT_SYNC_FILE_PATH="${GK_SP_POTENTIAL_PROJECT_SYNC_FILE_PATH}"
+GK_SP_COMPELLO_SYNC_FILE_PATH="${GK_SP_COMPELLO_SYNC_FILE_PATH}"
+GK_SP_COMPELLO_SYNC_SHEET_NAME="${GK_SP_COMPELLO_SYNC_SHEET_NAME}"
+GK_AZURE_CONTAINER_SAS_URL="${GK_AZURE_CONTAINER_SAS_URL}"
+
+################################################################################
+# TQM API CONFIGURATION
+################################################################################
+TQM_OL1_KEY="${TQM_OL1_KEY}"
+TQM_TOKEN="${TQM_TOKEN}"
+TQM_CREATE_CASE_URL="${TQM_CREATE_CASE_URL}"
+
+################################################################################
+# DITIO API CONFIGURATION
+################################################################################
+DITIO_AUTH_TOKEN_URL="${DITIO_AUTH_TOKEN_URL}"
+DITIO_AUTH_CLIENT_ID="${DITIO_AUTH_CLIENT_ID}"
+DITIO_AUTH_CLIENT_SECRET="${DITIO_AUTH_CLIENT_SECRET}"
+DITIO_PATCH_CASE_URL="${DITIO_PATCH_CASE_URL}"
+DITIO_CREATE_PROJECT_URL="${DITIO_CREATE_PROJECT_URL}"
+DITIO_CREATE_TASK_URL="${DITIO_CREATE_TASK_URL}"
+DITIO_GET_TASKS_BY_TYPE_URL="${DITIO_GET_TASKS_BY_TYPE_URL}"
+
+################################################################################
+# AØE DITIO API CONFIGURATION
+################################################################################
+AOE_DITIO_CLIENT_ID="${AOE_DITIO_CLIENT_ID}"
+AOE_DITIO_CLIENT_SECRET="${AOE_DITIO_CLIENT_SECRET}"
+DITIO_AUTH_CLIENT_ID_KEPT="${DITIO_AUTH_CLIENT_ID_KEPT}"
+DITIO_AUTH_CLIENT_SECRET_KEPT="${DITIO_AUTH_CLIENT_SECRET_KEPT}"
+DITIO_KEPT_COMPANY_ID="${DITIO_KEPT_COMPANY_ID}"
+AOE_DITIO_AUTH_TOKEN_URL="${AOE_DITIO_AUTH_TOKEN_URL}"
+AOE_DITIO_API_BASE_URL="${AOE_DITIO_API_BASE_URL}"
+AOE_DITIO_CREATE_CASE_URL="${AOE_DITIO_CREATE_CASE_URL}"
+
+################################################################################
+# Endre API CONFIGURATION
+################################################################################
+ENDRE_API_BASE_URL="${ENDRE_API_BASE_URL}"
+ENDRE_API_USERNAME="${ENDRE_API_USERNAME}"
+ENDRE_API_PASSWORD="${ENDRE_API_PASSWORD}"
+
+
+################################################################################
+# SCANIA API CONFIGURATION
+################################################################################
+SCANIA_CLIENT_ID="${SCANIA_CLIENT_ID}"
+SCANIA_SECRET_KEY="${SCANIA_SECRET_KEY}"
+SCANIA_BASE_URL="${SCANIA_BASE_URL}"
+
+JOBYLON_API_URL="${JOBYLON_API_URL}"

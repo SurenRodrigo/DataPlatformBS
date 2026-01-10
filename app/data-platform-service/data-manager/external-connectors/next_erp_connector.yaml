@@ -1,0 +1,1856 @@
+version: 6.60.0
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - projects
+
+definitions:
+  linked:
+    HttpRequester:
+      request_headers:
+        Accept: application/json
+        Content-Type: application/json
+        Authorization: "Bearer {{ config[\"api_token\"] }}"
+    SimpleRetriever:
+      paginator:
+        type: DefaultPaginator
+        page_size_option:
+          type: RequestOption
+          field_name: size
+          inject_into: request_parameter
+        page_token_option:
+          type: RequestOption
+          field_name: page
+          inject_into: request_parameter
+        pagination_strategy:
+          type: PageIncrement
+          page_size: 100
+          start_from_page: 1
+          inject_on_first_request: true
+          # Safer temporary throttle: request only the first page
+          # Remove or increase this when re-enabling deeper pagination
+          max_pages: 1
+streams:
+  - type: DeclarativeStream
+    name: projects
+    retriever:
+      type: SimpleRetriever
+      paginator:
+        $ref: "#/definitions/linked/SimpleRetriever/paginator"
+      requester:
+        type: HttpRequester
+        url: https://api.next-tech.com/v1/project/overview/
+        http_method: GET
+        request_headers:
+          $ref: "#/definitions/linked/HttpRequester/request_headers"
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - items
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        type: object
+        $schema: http://json-schema.org/schema#
+        properties:
+          id:
+            type:
+              - number
+              - "null"
+          created:
+            type:
+              - string
+              - "null"
+          createduserid:
+            type:
+              - number
+              - "null"
+          changed:
+            type:
+              - string
+              - "null"
+          changeduserid:
+            type:
+              - number
+              - "null"
+          projectno:
+            type:
+              - string
+              - "null"
+          projectname:
+            type:
+              - string
+              - "null"
+          projecttypename:
+            type:
+              - string
+              - "null"
+          costcentername:
+            type:
+              - string
+              - "null"
+          projectresourcegroupname:
+            type:
+              - string
+              - "null"
+          pricetypename:
+            type:
+              - string
+              - "null"
+          tagfield1name:
+            type:
+              - string
+              - "null"
+          tagfield2name:
+            type:
+              - string
+              - "null"
+          projectmanagerid:
+            type:
+              - number
+              - "null"
+          projectmanagername:
+            type:
+              - string
+              - "null"
+          workleaderid:
+            type:
+              - number
+              - "null"
+          workleadername:
+            type:
+              - string
+              - "null"
+          projectstart:
+            type:
+              - string
+              - "null"
+          projectend:
+            type:
+              - string
+              - "null"
+          workplaceid:
+            type:
+              - string
+              - "null"
+          customername:
+            type:
+              - string
+              - "null"
+          customertypename:
+            type:
+              - string
+              - "null"
+          projectstatusid:
+            type:
+              - number
+              - "null"
+          projectstatusname:
+            type:
+              - string
+              - "null"
+          projectstatuscode:
+            type:
+              - number
+              - "null"
+          budgetcost:
+            type:
+              - number
+              - "null"
+          budgetrevenue:
+            type:
+              - number
+              - "null"
+          bookedhours:
+            type:
+              - number
+              - "null"
+          bookedawohours:
+            type:
+              - number
+              - "null"
+          slpcost:
+            type:
+              - number
+              - "null"
+          slprevenue:
+            type:
+              - number
+              - "null"
+          contributionmarginamountslp:
+            type:
+              - number
+              - "null"
+          contributionmarginpercentslp:
+            type:
+              - number
+              - "null"
+          forecast:
+            type:
+              - string
+              - "null"
+          forecastperioddate:
+            type:
+              - string
+              - "null"
+          bookedcost:
+            type:
+              - number
+              - "null"
+          bookedrevenue:
+            type:
+              - number
+              - "null"
+          bookedawocost:
+            type:
+              - number
+              - "null"
+          bookedaworevenue:
+            type:
+              - number
+              - "null"
+          budgethours:
+            type:
+              - number
+              - "null"
+          forecasthours:
+            type:
+              - number
+              - "null"
+          workordercost:
+            type:
+              - number
+              - "null"
+          workorderrevenue:
+            type:
+              - number
+              - "null"
+          contributionmarginamount:
+            type:
+              - number
+              - "null"
+          contributionmarginpercent:
+            type:
+              - number
+              - "null"
+          contributionmarginwo:
+            type:
+              - number
+              - "null"
+          contributionmarginwopercent:
+            type:
+              - number
+              - "null"
+          earnedrevenue:
+            type:
+              - number
+              - "null"
+          earnedrevenuenotinvoiced:
+            type:
+              - number
+              - "null"
+          invoiceable:
+            type:
+              - number
+              - "null"
+          currentcontributionmargin:
+            type:
+              - number
+              - "null"
+          budgetcontributionmarginpercent:
+            type:
+              - number
+              - "null"
+          budgetcontributionmarginamount:
+            type:
+              - number
+              - "null"
+          paymentplanamount:
+            type:
+              - number
+              - "null"
+          paymentplanwithheldamount:
+            type:
+              - number
+              - "null"
+          paymentplanoutcome:
+            type:
+              - number
+              - "null"
+          finalinspectiondate:
+            type:
+              - string
+              - "null"
+          guaranteeinspectiondate:
+            type:
+              - string
+              - "null"
+          guaranteetime:
+            type:
+              - number
+              - "null"
+        additionalProperties: true
+  - type: DeclarativeStream
+    name: voucher_row
+    retriever:
+      type: SimpleRetriever
+      requester:
+        type: HttpRequester
+        url: https://api.next-tech.com/v1/voucher/row/
+        http_method: GET
+        request_headers:
+          $ref: "#/definitions/linked/HttpRequester/request_headers"
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - items
+      paginator:
+        $ref: "#/definitions/linked/SimpleRetriever/paginator"
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        type: object
+        $schema: http://json-schema.org/schema#
+        properties:
+          id:
+            type:
+              - number
+              - "null"
+          created:
+            type:
+              - string
+              - "null"
+          createduserid:
+            type:
+              - number
+              - "null"
+          changed:
+            type:
+              - string
+              - "null"
+          changeduserid:
+            type:
+              - number
+              - "null"
+          vouchernumber:
+            type:
+              - string
+              - "null"
+          text:
+            type:
+              - string
+              - "null"
+          projectid:
+            type:
+              - number
+              - "null"
+          workorderid:
+            type:
+              - number
+              - "null"
+          accountno:
+            type:
+              - string
+              - "null"
+          invoiceable:
+            type:
+              - boolean
+              - "null"
+          ledgerdate:
+            type:
+              - string
+              - "null"
+          invoiceamount:
+            type:
+              - number
+              - "null"
+          markup:
+            type:
+              - number
+              - "null"
+          markupamount:
+            type:
+              - number
+              - "null"
+          revenuetransaction:
+            type:
+              - boolean
+              - "null"
+          scannedurl:
+            type:
+              - string
+              - "null"
+          extvoucherid:
+            type:
+              - string
+              - "null"
+          notes:
+            type:
+              - string
+              - "null"
+          payoff:
+            type:
+              - boolean
+              - "null"
+          includeinreport:
+            type:
+              - boolean
+              - "null"
+          transactiontype:
+            type:
+              - string
+              - "null"
+          customerprice:
+            type:
+              - number
+              - "null"
+          projectno:
+            type:
+              - string
+              - "null"
+          projectname:
+            type:
+              - string
+              - "null"
+          addition:
+            type:
+              - boolean
+              - "null"
+          workorderno:
+            type:
+              - number
+              - "null"
+          workordername:
+            type:
+              - string
+              - "null"
+          isrunningcost:
+            type:
+              - boolean
+              - "null"
+          accountdescription:
+            type:
+              - string
+              - "null"
+          accountgroup:
+            type:
+              - string
+              - "null"
+          invoiceno:
+            type:
+              - number
+              - "null"
+          invoicenumber:
+            type:
+              - string
+              - "null"
+          vatamount:
+            type:
+              - number
+              - "null"
+          invoiced:
+            type:
+              - boolean
+              - "null"
+          locked:
+            type:
+              - boolean
+              - "null"
+          invoiceid:
+            type:
+              - number
+              - "null"
+          chargesproductionbudget:
+            type:
+              - boolean
+              - "null"
+          approvedbyproduction:
+            type:
+              - boolean
+              - "null"
+          awoamounttype1:
+            type:
+              - number
+              - "null"
+          awoamounttype2:
+            type:
+              - number
+              - "null"
+          awoamounttype3:
+            type:
+              - number
+              - "null"
+          workorderstatusid:
+            type:
+              - number
+              - "null"
+          workorderstatuscode:
+            type:
+              - number
+              - "null"
+          workorderstatusname:
+            type:
+              - string
+              - "null"
+          workorderstatuscolor:
+            type:
+              - string
+              - "null"
+          projectstatusid:
+            type:
+              - number
+              - "null"
+          projectstatuscode:
+            type:
+              - number
+              - "null"
+          projectstatusname:
+            type:
+              - string
+              - "null"
+          projectstatuscolor:
+            type:
+              - string
+              - "null"
+        additionalProperties: true
+  - type: DeclarativeStream
+    name: booked_hours
+    retriever:
+      type: SimpleRetriever
+      requester:
+        type: HttpRequester
+        url: https://api.next-tech.com/v1/bookedhours/
+        http_method: GET
+        request_headers:
+          $ref: "#/definitions/linked/HttpRequester/request_headers"
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - items
+      paginator:
+        $ref: "#/definitions/linked/SimpleRetriever/paginator"
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        type: object
+        $schema: http://json-schema.org/schema#
+        properties:
+          userid:
+            type:
+              - number
+              - "null"
+          projectid:
+            type:
+              - number
+              - "null"
+          workorderid:
+            type:
+              - number
+              - "null"
+          date:
+            type:
+              - string
+              - "null"
+          debit:
+            type:
+              - boolean
+              - "null"
+          professionitemid:
+            type:
+              - number
+              - "null"
+          hours:
+            type:
+              - number
+              - "null"
+          diarynote:
+            type:
+              - string
+              - "null"
+          travelondutycost:
+            type:
+              - number
+              - "null"
+          travelondutyprice:
+            type:
+              - number
+              - "null"
+          travelprivatecost:
+            type:
+              - number
+              - "null"
+          piecework:
+            type:
+              - boolean
+              - "null"
+          allowanceunitcost:
+            type:
+              - number
+              - "null"
+          allowanceunitprice:
+            type:
+              - number
+              - "null"
+          breaktime:
+            type:
+              - number
+              - "null"
+          id:
+            type:
+              - number
+              - "null"
+          created:
+            type:
+              - string
+              - "null"
+          createduserid:
+            type:
+              - number
+              - "null"
+          changed:
+            type:
+              - string
+              - "null"
+          changeduserid:
+            type:
+              - number
+              - "null"
+          approved:
+            type:
+              - boolean
+              - "null"
+          starttime:
+            type:
+              - string
+              - "null"
+          stoptime:
+            type:
+              - string
+              - "null"
+          isabsence:
+            type:
+              - boolean
+              - "null"
+          employeeno:
+            type:
+              - string
+              - "null"
+          fullname:
+            type:
+              - string
+              - "null"
+          employmenttypeid:
+            type:
+              - number
+              - "null"
+          projectmanagername:
+            type:
+              - string
+              - "null"
+          projectname:
+            type:
+              - string
+              - "null"
+          projectno:
+            type:
+              - string
+              - "null"
+          workorderno:
+            type:
+              - number
+              - "null"
+          workordername:
+            type:
+              - string
+              - "null"
+          addition:
+            type:
+              - boolean
+              - "null"
+          customerid:
+            type:
+              - number
+              - "null"
+          attested:
+            type:
+              - boolean
+              - "null"
+          attesttime:
+            type:
+              - string
+              - "null"
+          attestuserid:
+            type:
+              - number
+              - "null"
+          attestfullname:
+            type:
+              - string
+              - "null"
+          locked:
+            type:
+              - boolean
+              - "null"
+          invoiced:
+            type:
+              - boolean
+              - "null"
+          costcenterid:
+            type:
+              - number
+              - "null"
+          professioncode:
+            type:
+              - string
+              - "null"
+          professionaccountno:
+            type:
+              - string
+              - "null"
+          professionsalaryno:
+            type:
+              - string
+              - "null"
+          priceunit:
+            type:
+              - number
+              - "null"
+          costunit:
+            type:
+              - number
+              - "null"
+          totalrevenue:
+            type:
+              - number
+              - "null"
+          totalcost:
+            type:
+              - number
+              - "null"
+        additionalProperties: true
+  - type: DeclarativeStream
+    name: workorder
+    retriever:
+      type: SimpleRetriever
+      paginator:
+        $ref: "#/definitions/linked/SimpleRetriever/paginator"
+      requester:
+        type: HttpRequester
+        url: https://api.next-tech.com/v1/workorder/
+        http_method: GET
+        request_headers:
+          $ref: "#/definitions/linked/HttpRequester/request_headers"
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - items
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        type: object
+        $schema: http://json-schema.org/schema#
+        properties:
+          description:
+            type:
+              - string
+              - "null"
+          id:
+            type:
+              - number
+              - "null"
+          created:
+            type:
+              - string
+              - "null"
+          createduserid:
+            type:
+              - number
+              - "null"
+          changed:
+            type:
+              - string
+              - "null"
+          changeduserid:
+            type:
+              - number
+              - "null"
+          name:
+            type:
+              - string
+              - "null"
+          projectid:
+            type:
+              - number
+              - "null"
+          closed:
+            type:
+              - boolean
+              - "null"
+          customercontactid:
+            type:
+              - number
+              - "null"
+          orderdate:
+            type:
+              - string
+              - "null"
+          reportsign:
+            type:
+              - string
+              - "null"
+          pricetypeid:
+            type:
+              - number
+              - "null"
+          customerid:
+            type:
+              - number
+              - "null"
+          createdname:
+            type:
+              - string
+              - "null"
+          projectnumber:
+            type:
+              - string
+              - "null"
+          projectname:
+            type:
+              - string
+              - "null"
+          hasdocument:
+            type:
+              - boolean
+              - "null"
+          customername:
+            type:
+              - string
+              - "null"
+          customertypename:
+            type:
+              - string
+              - "null"
+          customercontactname:
+            type:
+              - string
+              - "null"
+          creditrisk:
+            type:
+              - boolean
+              - "null"
+          fullyinvoiced:
+            type:
+              - boolean
+              - "null"
+          latestinvoicedate:
+            type:
+              - string
+              - "null"
+          totalearnednotinvoiced:
+            type:
+              - number
+              - "null"
+          bookedcosttotal:
+            type:
+              - number
+              - "null"
+          bookedrevenuetotal:
+            type:
+              - number
+              - "null"
+          bookedhourstotal:
+            type:
+              - number
+              - "null"
+          earnedrevenue:
+            type:
+              - number
+              - "null"
+          contributionmargin:
+            type:
+              - number
+              - "null"
+          contributionmarginpercent:
+            type:
+              - number
+              - "null"
+          workorderno:
+            type:
+              - number
+              - "null"
+          feedback:
+            type:
+              - string
+              - "null"
+          includeonoffer:
+            type:
+              - boolean
+              - "null"
+          signonsite:
+            type:
+              - boolean
+              - "null"
+          workpoolgroupid:
+            type:
+              - number
+              - "null"
+          statusid:
+            type:
+              - number
+              - "null"
+          salaryno:
+            type:
+              - string
+              - "null"
+          customerreference:
+            type:
+              - string
+              - "null"
+          productionstart:
+            type:
+              - string
+              - "null"
+          productionend:
+            type:
+              - string
+              - "null"
+          foremanid:
+            type:
+              - number
+              - "null"
+          servicemanid:
+            type:
+              - number
+              - "null"
+          district:
+            type:
+              - string
+              - "null"
+          projectresourcegroupid:
+            type:
+              - number
+              - "null"
+          contractorvat:
+            type:
+              - boolean
+              - "null"
+          reminder:
+            type:
+              - boolean
+              - "null"
+          changedname:
+            type:
+              - string
+              - "null"
+          statusname:
+            type:
+              - string
+              - "null"
+          statuscode:
+            type:
+              - number
+              - "null"
+          foremanname:
+            type:
+              - string
+              - "null"
+          servicemanname:
+            type:
+              - string
+              - "null"
+          externalinvoicenumber:
+            type:
+              - string
+              - "null"
+          budgethourstotal:
+            type:
+              - number
+              - "null"
+          calculatedrevenue:
+            type:
+              - number
+              - "null"
+          totalworkcost:
+            type:
+              - number
+              - "null"
+          totalworkrevenue:
+            type:
+              - number
+              - "null"
+          calculatedcost:
+            type:
+              - number
+              - "null"
+        additionalProperties: true
+  - type: DeclarativeStream
+    name: workorder_row
+    retriever:
+      type: SimpleRetriever
+      requester:
+        type: HttpRequester
+        url: https://api.next-tech.com/v1/workorderrow/
+        http_method: GET
+        request_headers:
+          $ref: "#/definitions/linked/HttpRequester/request_headers"
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - items
+      paginator:
+        $ref: "#/definitions/linked/SimpleRetriever/paginator"
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        type: object
+        $schema: http://json-schema.org/schema#
+        properties:
+          description:
+            type:
+              - string
+              - "null"
+          id:
+            type:
+              - number
+              - "null"
+          created:
+            type:
+              - string
+              - "null"
+          createduserid:
+            type:
+              - number
+              - "null"
+          changed:
+            type:
+              - string
+              - "null"
+          changeduserid:
+            type:
+              - number
+              - "null"
+          workorderid:
+            type:
+              - number
+              - "null"
+          codeno:
+            type:
+              - string
+              - "null"
+          accountno:
+            type:
+              - string
+              - "null"
+          itemunitid:
+            type:
+              - number
+              - "null"
+          costunit:
+            type:
+              - number
+              - "null"
+          priceunit:
+            type:
+              - number
+              - "null"
+          plannedquantity:
+            type:
+              - number
+              - "null"
+          usedquantity:
+            type:
+              - number
+              - "null"
+          performeddate:
+            type:
+              - string
+              - "null"
+          performeduserid:
+            type:
+              - number
+              - "null"
+          quantity:
+            type:
+              - number
+              - "null"
+          comment:
+            type:
+              - string
+              - "null"
+          articlecategoryid:
+            type:
+              - number
+              - "null"
+          payoffunitprice:
+            type:
+              - number
+              - "null"
+          showinmobile:
+            type:
+              - boolean
+              - "null"
+          ispayoff:
+            type:
+              - boolean
+              - "null"
+          chargeable:
+            type:
+              - boolean
+              - "null"
+          costunitpricelist:
+            type:
+              - string
+              - "null"
+          priceunitpricelist:
+            type:
+              - string
+              - "null"
+          payoffunitpricelist:
+            type:
+              - string
+              - "null"
+          addition:
+            type:
+              - boolean
+              - "null"
+          performedusername:
+            type:
+              - string
+              - "null"
+          itemunitname:
+            type:
+              - string
+              - "null"
+          totalcost:
+            type:
+              - number
+              - "null"
+          totalprice:
+            type:
+              - number
+              - "null"
+          invoicenumber:
+            type:
+              - string
+              - "null"
+          isinvoiced:
+            type:
+              - boolean
+              - "null"
+          islocked:
+            type:
+              - boolean
+              - "null"
+          invoiceid:
+            type:
+              - number
+              - "null"
+          articlecategoryname:
+            type:
+              - string
+              - "null"
+          tenderamount:
+            type:
+              - number
+              - "null"
+          bookedhoursid:
+            type:
+              - number
+              - "null"
+          creditprojectid:
+            type:
+              - number
+              - "null"
+        additionalProperties: true
+  - type: DeclarativeStream
+    name: customer_invoices
+    retriever:
+      type: SimpleRetriever
+      paginator:
+        $ref: "#/definitions/linked/SimpleRetriever/paginator"
+      requester:
+        type: HttpRequester
+        url: https://api.next-tech.com/v1/customerinvoice/
+        http_method: GET
+        request_headers:
+          $ref: "#/definitions/linked/HttpRequester/request_headers"
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - items
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        type: object
+        $schema: http://json-schema.org/schema#
+        properties:
+          description:
+            type:
+              - string
+              - "null"
+          extinvoiceno:
+            type:
+              - string
+              - "null"
+          id:
+            type:
+              - number
+              - "null"
+          created:
+            type:
+              - string
+              - "null"
+          createduserid:
+            type:
+              - number
+              - "null"
+          changed:
+            type:
+              - string
+              - "null"
+          changeduserid:
+            type:
+              - number
+              - "null"
+          invoiceno:
+            type:
+              - number
+              - "null"
+          projectid:
+            type:
+              - number
+              - "null"
+          customerid:
+            type:
+              - number
+              - "null"
+          customercontactid:
+            type:
+              - number
+              - "null"
+          customerref:
+            type:
+              - string
+              - "null"
+          customerref2:
+            type:
+              - string
+              - "null"
+          ourref:
+            type:
+              - string
+              - "null"
+          contractno:
+            type:
+              - string
+              - "null"
+          creditinvoiceid:
+            type:
+              - number
+              - "null"
+          taxreductionamount:
+            type:
+              - number
+              - "null"
+          netamount:
+            type:
+              - number
+              - "null"
+          originalnetamount:
+            type:
+              - number
+              - "null"
+          title:
+            type:
+              - string
+              - "null"
+          billaddress1:
+            type:
+              - string
+              - "null"
+          billaddress2:
+            type:
+              - string
+              - "null"
+          billaddress3:
+            type:
+              - string
+              - "null"
+          billaddress4:
+            type:
+              - string
+              - "null"
+          billaddress5:
+            type:
+              - string
+              - "null"
+          billaddress6:
+            type:
+              - string
+              - "null"
+          invoicedate:
+            type:
+              - string
+              - "null"
+          ledgerdate:
+            type:
+              - string
+              - "null"
+          duedate:
+            type:
+              - string
+              - "null"
+          vatamount:
+            type:
+              - number
+              - "null"
+          customervatno:
+            type:
+              - string
+              - "null"
+          contractorvat:
+            type:
+              - boolean
+              - "null"
+          novat:
+            type:
+              - boolean
+              - "null"
+          hidemarkup:
+            type:
+              - boolean
+              - "null"
+          hidecodeno:
+            type:
+              - boolean
+              - "null"
+          billterms:
+            type:
+              - string
+              - "null"
+          billtermsdays:
+            type:
+              - number
+              - "null"
+          billtermscode:
+            type:
+              - string
+              - "null"
+          totalworkcost:
+            type:
+              - number
+              - "null"
+          invoicetypeid:
+            type:
+              - number
+              - "null"
+          creditnote:
+            type:
+              - boolean
+              - "null"
+          readyforinvoice:
+            type:
+              - boolean
+              - "null"
+          taxreductionid:
+            type:
+              - number
+              - "null"
+          invoicestatuscode:
+            type:
+              - number
+              - "null"
+          invoicestatusname:
+            type:
+              - string
+              - "null"
+          locked:
+            type:
+              - boolean
+              - "null"
+          customername:
+            type:
+              - string
+              - "null"
+          customercontactname:
+            type:
+              - string
+              - "null"
+          createdname:
+            type:
+              - string
+              - "null"
+          changedname:
+            type:
+              - string
+              - "null"
+          invoiceamount:
+            type:
+              - number
+              - "null"
+          customeramount:
+            type:
+              - number
+              - "null"
+          invoicenumber:
+            type:
+              - string
+              - "null"
+          lockedtosource:
+            type:
+              - boolean
+              - "null"
+          projectno:
+            type:
+              - string
+              - "null"
+          customertypename:
+            type:
+              - string
+              - "null"
+          edistatus:
+            type:
+              - string
+              - "null"
+          invoicetypename:
+            type:
+              - string
+              - "null"
+          vatinvoice:
+            type:
+              - boolean
+              - "null"
+        additionalProperties: true
+  - type: DeclarativeStream
+    name: customer
+    retriever:
+      type: SimpleRetriever
+      paginator:
+        $ref: "#/definitions/linked/SimpleRetriever/paginator"
+      requester:
+        type: HttpRequester
+        url: https://api.next-tech.com/v1/customer/
+        http_method: GET
+        request_headers:
+          $ref: "#/definitions/linked/HttpRequester/request_headers"
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - items
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        type: object
+        $schema: http://json-schema.org/schema#
+        properties:
+          name:
+            type:
+              - string
+              - "null"
+          organizationno:
+            type:
+              - string
+              - "null"
+          customerno:
+            type:
+              - string
+              - "null"
+          customertypeid:
+            type:
+              - number
+              - "null"
+          currencyid:
+            type:
+              - number
+              - "null"
+          email:
+            type:
+              - string
+              - "null"
+          phone:
+            type:
+              - string
+              - "null"
+          mobile:
+            type:
+              - string
+              - "null"
+          fax:
+            type:
+              - string
+              - "null"
+          billaddress1:
+            type:
+              - string
+              - "null"
+          billaddress2:
+            type:
+              - string
+              - "null"
+          billaddress3:
+            type:
+              - string
+              - "null"
+          billaddress4:
+            type:
+              - string
+              - "null"
+          billaddress5:
+            type:
+              - string
+              - "null"
+          billaddress6:
+            type:
+              - string
+              - "null"
+          billingtermsid:
+            type:
+              - number
+              - "null"
+          ediAddress:
+            type:
+              - string
+              - "null"
+          customernote:
+            type:
+              - string
+              - "null"
+          constructioncompany:
+            type:
+              - boolean
+              - "null"
+          novat:
+            type:
+              - boolean
+              - "null"
+          iban:
+            type:
+              - string
+              - "null"
+          swiftbic:
+            type:
+              - string
+              - "null"
+          bankname:
+            type:
+              - string
+              - "null"
+          bankaccountno:
+            type:
+              - string
+              - "null"
+          clearingno:
+            type:
+              - string
+              - "null"
+          eancode:
+            type:
+              - string
+              - "null"
+          vatno:
+            type:
+              - string
+              - "null"
+          countrycode:
+            type:
+              - string
+              - "null"
+          propertyname:
+            type:
+              - string
+              - "null"
+          housingcooperativeorgno:
+            type:
+              - string
+              - "null"
+          apartmentno:
+            type:
+              - string
+              - "null"
+          webaddress:
+            type:
+              - string
+              - "null"
+          active:
+            type:
+              - boolean
+              - "null"
+          isalsosupplier:
+            type:
+              - boolean
+              - "null"
+          creditrisk:
+            type:
+              - boolean
+              - "null"
+          useinvoicefee:
+            type:
+              - boolean
+              - "null"
+          invoiceemail:
+            type:
+              - string
+              - "null"
+          invoicetypeid:
+            type:
+              - number
+              - "null"
+          privateperson:
+            type:
+              - boolean
+              - "null"
+          id:
+            type:
+              - number
+              - "null"
+          created:
+            type:
+              - string
+              - "null"
+          createduserid:
+            type:
+              - number
+              - "null"
+          changed:
+            type:
+              - string
+              - "null"
+          changeduserid:
+            type:
+              - number
+              - "null"
+          billingterms:
+            type:
+              - string
+              - "null"
+          customertypename:
+            type:
+              - string
+              - "null"
+          currencycode:
+            type:
+              - string
+              - "null"
+          hasprices:
+            type:
+              - boolean
+              - "null"
+          hasfavorites:
+            type:
+              - boolean
+              - "null"
+          invoicetypename:
+            type:
+              - string
+              - "null"
+        additionalProperties: true
+  - type: DeclarativeStream
+    retriever:
+      type: SimpleRetriever
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - items
+      requester:
+        type: HttpRequester
+        http_method: GET
+        url: https://api.next-tech.com/v1/account/
+        request_headers:
+          $ref: "#/definitions/linked/HttpRequester/request_headers"
+      paginator:
+        $ref: "#/definitions/linked/SimpleRetriever/paginator"
+    name: account
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        type: object
+        $schema: http://json-schema.org/schema#
+        properties:
+          description:
+            type:
+              - string
+              - "null"
+          id:
+            type:
+              - number
+              - "null"
+          created:
+            type:
+              - string
+              - "null"
+          createduserid:
+            type:
+              - number
+              - "null"
+          changed:
+            type:
+              - string
+              - "null"
+          changeduserid:
+            type:
+              - number
+              - "null"
+          accountno:
+            type:
+              - string
+              - "null"
+          vatcode:
+            type:
+              - string
+              - "null"
+          externalcode:
+            type:
+              - string
+              - "null"
+          vatid:
+            type:
+              - number
+              - "null"
+          cost:
+            type:
+              - boolean
+              - "null"
+          work:
+            type:
+              - boolean
+              - "null"
+          material:
+            type:
+              - boolean
+              - "null"
+          contractorvat:
+            type:
+              - boolean
+              - "null"
+          complementaccountno:
+            type:
+              - string
+              - "null"
+          invoiceableonimport:
+            type:
+              - boolean
+              - "null"
+          invoicearticleno:
+            type:
+              - string
+              - "null"
+          disabled:
+            type:
+              - boolean
+              - "null"
+        additionalProperties: true
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - api_token
+    properties:
+      api_token:
+        type: string
+        description: API Bearer token for authentication with Next ERP API
+        order: 0
+        title: API Token
+        airbyte_secret: true
+    additionalProperties: true
+
+metadata:
+  testedStreams:
+    customer:
+      isStale: false
+      hasRecords: true
+      streamHash: 4f18bfefe2870e364059045a3992188d5fdcd61e
+      hasResponse: true
+      primaryKeysAreUnique: true
+      primaryKeysArePresent: true
+      responsesAreSuccessful: true
+    projects:
+      isStale: false
+      hasRecords: true
+      streamHash: 65e310b24e2c5833e5c69c713365dc1ee6664f68
+      hasResponse: true
+      primaryKeysAreUnique: true
+      primaryKeysArePresent: true
+      responsesAreSuccessful: true
+    workorder:
+      isStale: false
+      streamHash: 68b8e9ce9f178938630d937f1b12e245ba5a6e8a
+      hasResponse: true
+      responsesAreSuccessful: true
+      hasRecords: true
+      primaryKeysArePresent: true
+      primaryKeysAreUnique: true
+    booked_hours:
+      isStale: false
+      hasRecords: true
+      streamHash: 0dbe5b35be7338383e49dbf4f23ef3a65fc53d55
+      hasResponse: true
+      primaryKeysAreUnique: true
+      primaryKeysArePresent: true
+      responsesAreSuccessful: true
+    workorder_row:
+      isStale: false
+      streamHash: 0a7e22946c4d38244543e559e1aee333d1618964
+      hasResponse: true
+      responsesAreSuccessful: true
+      hasRecords: true
+      primaryKeysArePresent: true
+      primaryKeysAreUnique: true
+    customer_invoices:
+      isStale: false
+      hasRecords: true
+      streamHash: be87f7c5451b177611b41e4586b6eef342dedf7f
+      hasResponse: true
+      primaryKeysAreUnique: true
+      primaryKeysArePresent: true
+      responsesAreSuccessful: true
+    account:
+      streamHash: 531cb9319aabf9690e4c6c4e21c2481ea4271d99
+      isStale: false
+      hasResponse: true
+      responsesAreSuccessful: true
+      hasRecords: true
+      primaryKeysArePresent: true
+      primaryKeysAreUnique: true
+    voucher_row:
+      isStale: false
+      streamHash: 8739c2d7d84d79d97cb7fb25b575f76d7093cbac
+      hasResponse: true
+      responsesAreSuccessful: true
+      hasRecords: true
+      primaryKeysArePresent: true
+      primaryKeysAreUnique: true
+  autoImportSchema:
+    customer: true
+    projects: true
+    workorder: true
+    booked_hours: true
+    workorder_row: true
+    customer_invoices: true
+    account: true
+    voucher_row: true
+
+concurrency_level:
+  type: ConcurrencyLevel
+  default_concurrency: 1

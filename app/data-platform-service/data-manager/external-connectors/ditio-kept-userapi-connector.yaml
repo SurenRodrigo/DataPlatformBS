@@ -1,0 +1,145 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - project
+
+definitions:
+  streams:
+    project:
+      type: DeclarativeStream
+      name: project
+      primary_key:
+        - id
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: project
+          http_method: GET
+          request_headers:
+            Accept: text/plain
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+        paginator:
+          type: DefaultPaginator
+          page_token_option:
+            type: RequestOption
+            inject_into: request_parameter
+            field_name: ContinuationToken
+          pagination_strategy:
+            type: CursorPagination
+            cursor_value: '{{ response.get("continuationToken", {}) }}'
+            stop_condition: '{{ not response.get("continuationToken", {}) }}'
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/project'
+  base_requester:
+    type: HttpRequester
+    url_base: https://core-api.ditio.app/reporting/v1
+    authenticator:
+      type: OAuthAuthenticator
+      client_id: "{{ config[\"client_id\"] }}"
+      grant_type: client_credentials
+      client_secret: "{{ config[\"client_secret\"] }}"
+      refresh_request_body: {}
+      token_refresh_endpoint: https://identity.ditio.no/connect/token
+
+streams:
+  - $ref: '#/definitions/streams/project'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - client_id
+      - client_secret
+    properties:
+      client_id:
+        type: string
+        title: Client ID
+        airbyte_secret: true
+        order: 0
+      client_secret:
+        type: string
+        title: Client secret
+        airbyte_secret: true
+        order: 1
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    project: true
+
+schemas:
+  project:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      companyData:
+        type:
+          - array
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      companyName:
+        type:
+          - string
+          - 'null'
+      createdBy:
+        type:
+          - string
+          - 'null'
+      createdDateTime:
+        type:
+          - string
+          - 'null'
+      externalDim01:
+        type:
+          - string
+          - 'null'
+      externalNumber:
+        type:
+          - string
+          - 'null'
+      id:
+        type: string
+      isDeleted:
+        type:
+          - boolean
+          - 'null'
+      isExternal:
+        type:
+          - boolean
+          - 'null'
+      modifiedBy:
+        type:
+          - string
+          - 'null'
+      modifiedDateTime:
+        type:
+          - string
+          - 'null'
+      name:
+        type:
+          - string
+          - 'null'
+      number:
+        type:
+          - string
+          - 'null'
+    required:
+      - id

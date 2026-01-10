@@ -1,0 +1,243 @@
+################################################################################
+# APPBASE APP ENVIRONMENT CONFIGURATION
+################################################################################
+# Environment variables required for the app docker-compose.yaml services
+# Extracted from _env_sample based on actual usage in docker-compose.yaml
+################################################################################
+
+################################################################################
+# PLATFORM CONFIGURATION
+################################################################################
+# IMPORTANT: Service feature toggles are configured in service.yaml at project root
+# See service.yaml for enabling/disabling platform services (hasura, metabase, superset, dagster, nginx)
+# and app services (data-platform-service)
+# 
+# The following env vars are NO LONGER USED for feature toggling:
+#   - WITH_BI, WITH_BI_TOOL, WITH_ALL_BI, WITH_DAGSTER
+# These have been removed. All service enablement is controlled via service.yaml
+
+################################################################################
+# DATABASE CONFIGURATION
+################################################################################
+# Main AppBase Database
+APPBASE_DB_NAME=dataplatform
+APPBASE_DB_NAME_SW=dataplatform_sw
+APPBASE_DB_HOST=db
+APPBASE_DB_PORT=5432
+APPBASE_DB_USER=dataplatuser
+APPBASE_DB_PASSWORD=dataplatpassword
+
+# AppBase Configuration Database  
+APPBASE_CONFIG_DB_HOST=db
+APPBASE_CONFIG_DB_PORT=5432
+APPBASE_CONFIG_DB_USER=dataplatuser
+APPBASE_CONFIG_DB_PASSWORD=dataplatpassword
+APPBASE_CONFIG_DB_NAME=dataplatform
+
+################################################################################
+# HASURA GRAPHQL ENGINE CONFIGURATION
+################################################################################
+HASURA_DB_NAME=hasura
+HASURA_GRAPHQL_ADMIN_SECRET=admin
+HASURA_URL=http://hasura:8080
+
+################################################################################
+# METABASE BUSINESS INTELLIGENCE CONFIGURATION
+################################################################################
+METABASE_DB_NAME=metabase
+METABASE_USER=admin@admin.com
+METABASE_PASSWORD=admin
+METABASE_URL=http://metabase:3000
+METABASE_USE_SSL=false
+METABASE_APPBASE_DB_HOST=db
+
+################################################################################
+# APACHE SUPERSET BUSINESS INTELLIGENCE CONFIGURATION
+################################################################################
+SUPERSET_DB_NAME=superset
+SUPERSET_ADMIN_USER=admin
+SUPERSET_ADMIN_EMAIL=admin@admin.com
+SUPERSET_ADMIN_PASSWORD=admin
+SUPERSET_SECRET_KEY=superset_secret_key_change_in_production
+SUPERSET_URL=http://superset:8088
+# SUPERSET_APPBASE_DB_HOST: Database hostname for Superset to connect to application database
+#   - For local development: Set to "db" (Docker service name)
+#   - For production/external DB: Set to external database hostname/IP that Superset container can reach
+#     Example: "my-server.postgres.database.azure.com" or "192.168.1.100"
+#   - IMPORTANT: This must be reachable from the Superset container, not just appbase-init container
+#   - This is different from APPBASE_DB_HOST which is used by appbase-init container
+#   - When using external database, ensure Superset container has network access to the database hostname
+SUPERSET_APPBASE_DB_HOST=db
+
+################################################################################
+# DAGSTER DATA ORCHESTRATION CONFIGURATION
+################################################################################
+# Dagster Integration for data pipeline orchestration
+# Note: Dagster enablement is controlled via service.yaml (platform.dagster)
+# The WITH_DAGSTER env var is NO LONGER USED for feature toggling
+DAGSTER_PORT="${DAGSTER_PORT:-3030}"
+DAGSTER_URL=http://dagster-webserver:${DAGSTER_PORT}
+DAGSTER_CODE_LOCATION=/app/dagster_code
+DAGSTER_CODE_LOCATION_NAME=appbase_pipelines
+DAGSTER_ADMIN_USER=admin
+DAGSTER_ADMIN_PASSWORD=admin
+DAGSTER_DB_NAME=dagster
+
+################################################################################
+# APPBASE SYSTEM INITIALIZATION CONFIGURATION
+################################################################################
+APPBASE_INIT_IMAGE=appbase-init:latest
+APPBASE_INIT_LOG_LEVEL=info
+RUN_DB_MIGRATIONS=true
+
+################################################################################
+# APPLICATION SECURITY CONFIGURATION
+################################################################################
+APP_BASE_SECRET="55905c45-3f61-4b7d-8f9f-e09784ab9521"
+NODE_ENV=development
+
+################################################################################
+# CLIENT APPLICATION CONFIGURATION
+################################################################################
+# These variables are used in the client service but not defined in _env_sample
+# Adding with default values from docker-compose.yaml
+CLIENT_PORT=3001
+CLIENT_BUILD_TARGET=dev 
+
+################################################################################
+# PYAIRBYTE CACHE DATABASE CONFIGURATION
+################################################################################
+# PyAirbyte cache database for storing synced data from external connectors
+# Each connector will have its own schema within this database
+PYAIRBYTE_CACHE_DB_HOST=db
+PYAIRBYTE_CACHE_DB_PORT=5432
+PYAIRBYTE_CACHE_DB_USER=dataplatuser
+PYAIRBYTE_CACHE_DB_PASSWORD=dataplatpassword
+PYAIRBYTE_CACHE_DB_NAME=dataplatform 
+
+PYAIRBYTE_CACHE_SWEDEN_DB_HOST=db
+PYAIRBYTE_CACHE_SWEDEN_DB_PORT=5432
+PYAIRBYTE_CACHE_SWEDEN_DB_USER=dataplatuser
+PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD=dataplatpassword
+PYAIRBYTE_CACHE_SWEDEN_DB_NAME=dataplatform_sw
+
+################################################################################
+# PYAIRBYTE CONNECTOR DYNAMIC CONFIGURATION
+################################################################################
+# Provide per-connector configuration as a JSON object mapping connector name to
+# its configuration object. Each connector's object is passed as the `config`
+# when instantiating the source. Example keys can include api_key, start_date,
+# page_size, etc., depending on the connector's spec.
+#
+# Example (single line JSON string):
+# PYAIRBYTE_CONNECTOR_CONFIGS={"maranics-connector":{"api_key":"xxxxxxxx","start_date":"2024-01-01"},"sample-connector":{}}
+#
+# Notes:
+# - Keep this as a single line or escape newlines for docker-compose env parsing
+# - Secrets should be managed via your secret manager in production
+
+# Uncomment and configure as needed:
+PYAIRBYTE_CONNECTOR_CONFIGS='{"next_erp_connector": {"api_token": ""},"admmit-connector":{"server":"Admmitdp.database.windows.net", "database":"", "username":"", "password":"", "schema":"dbo"}, "catalyst-connector":{"client_id":"", "client_secret":""}, "catalyst-v1-connector":{"client_id":"", "client_secret":""}, "ditio-kept-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-time-styr-kept-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-time-styr-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "unit4-api-connector":{"username":"", "password":""}, "unit4-ebitapi-connector":{"username":"", "password":""}, "unit4-interimapi-connector":{"username":"", "password":""}, "unit4-invoiceapi-connector":{"username":"", "password":""}, "unit4-liqudityapi-connector":{"username":"", "password":""}, "tqm-api-connector":{"token":""}, "endringer-api-connector":{"username":"", "password":""}, "icore-connector":{"x_api_key":"", "clientid":"","fromAlteredTs":"2025-10-01", "toAlteredTs":"2025-10-30T00:00:00Z"}, "jobylonbi-connector":{"host":"","port":3306,"database":"","username":"","password":"","schema":"","ssl":{"ssl_verify_cert":true,"ssl_verify_identity":true}}, "test_ditio-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "test_tqm-api-connector":{"token":""}, "volvo-connector":{"username":"", "password":""}}'
+
+################################################################################
+# TEST CONNECTOR CONFIGURATION
+################################################################################
+# Set to true to use test connectors instead of production connectors
+# This affects DBT models and case processing assets
+# Ditio Test Connectors
+USE_DITIO_TEST_CONNECTORS=false
+
+# TQM Test Connectors  
+USE_TQM_TEST_CONNECTORS=false
+
+################################################################################
+# NRC SHAREPOINT CONFIGURATION
+################################################################################
+SP_CLIENT_ID=client_id
+SP_CLIENT_SECRET=client_secret
+SP_SITE_URL=site_url
+SP_FILE_LOCATION=file_location
+HR_FILE_NAME=hr_file_name
+HSE_FILE_NAME=hse_file_name
+
+################################################################################
+# GK SHAREPOINT CONFIGURATION
+################################################################################
+GK_SP_CLIENT_ID=client_id
+GK_SP_CLIENT_SECRET=client_secret
+GK_SP_TENANT_ID=tenant_id
+GK_SP_HOSTNAME=hostname
+GK_SP_SITE_PATH=site_path
+GK_SP_DRIVE_NAME=drive_name
+GK_SP_VISMA_SYNC_FILE_PATH=visma_sync_file_path 
+GK_SP_POTENTIAL_PROJECT_SYNC_FILE_PATH=potential_project_sync_file_path
+GK_HR_FILE_NAME=hr_file_name
+GK_SP_COMPELLO_SYNC_FILE_PATH=comello_sync_file_path
+GK_AZURE_CONTAINER_SAS_URL=azure_container_sas_url
+
+################################################################################
+# TQM API CONFIGURATION
+################################################################################
+TQM_CREATE_CASE_URL=create_case_url
+TQM_OL1_KEY=key
+TQM_TOKEN=token
+
+################################################################################
+# DITIO API CONFIGURATION
+################################################################################
+DITIO_AUTH_TOKEN_URL=auth_url
+DITIO_AUTH_CLIENT_ID=client_id
+DITIO_AUTH_CLIENT_SECRET=client_secret
+DITIO_AUTH_CLIENT_ID_KEPT=client_id_kept
+DITIO_AUTH_CLIENT_SECRET_KEPT=client_secret_kept
+DITIO_KEPT_COMPANY_ID=001068
+DITIO_PATCH_CASE_URL=ditio_patch_case_url
+DITIO_CREATE_PROJECT_URL=ditio_create_project_url
+DITIO_CREATE_TASK_URL=ditio_create_task_url
+DITIO_GET_TASKS_BY_TYPE_URL=ditio_get_tasks_by_type_url
+
+################################################################################
+# AØE DITIO API CONFIGURATION
+################################################################################
+AOE_DITIO_CLIENT_ID=client_id
+AOE_DITIO_CLIENT_SECRET=client_secret
+AOE_DITIO_AUTH_TOKEN_URL=auth_token_url
+AOE_DITIO_API_BASE_URL=api_base_url
+AOE_DITIO_CREATE_CASE_URL=create_case_url
+
+################################################################################
+# Endre API CONFIGURATION
+################################################################################
+ENDRE_API_BASE_URL=api_base_url
+ENDRE_API_USERNAME=api_username
+ENDRE_API_PASSWORD=api_password
+
+################################################################################
+# SCANIA API CONFIGURATION
+################################################################################
+SCANIA_CLIENT_ID=client_id
+SCANIA_SECRET_KEY=secret_key
+SCANIA_BASE_URL=base_url
+
+JOBYLON_API_URL="https://feed.jobylon.com/feeds/ad71f053-e255-4d46-b47f-de49e932a16d/?format=xml"
+
+#Update SE_SP variables for Sweden SharePoint when recive
+SE_SP_CLIENT_ID=client_id_same_as_gk
+SE_SP_CLIENT_SECRET=client_secret_same_as_gk
+SE_SP_TENANT_ID=tenant_id_same_as_gk
+SE_SP_HOSTNAME=hostname_same_as_gk
+SE_SP_SITE_PATH="SENEXTDataAPI"
+SE_SP_DRIVE_NAME="Documents"
+SE_SP_SYNC_FILE_PATH="General/Indata DB NEXT.xlsx"
+
+################################################################################
+# ACTION HANDLER SERVICE CONFIGURATION
+################################################################################
+# APPLICATION MODE CONFIGURATION
+################################################################################
+# APP_MODE controls development vs production behavior for app services
+#   - development: Enables hot reload, mounts source code volumes, uses watch mode
+#   - production: Uses built containers, no volume mounts, optimized runtime
+# Default: production (for safety)
+# Set to 'development' for local development with hot reload
+APP_MODE=production

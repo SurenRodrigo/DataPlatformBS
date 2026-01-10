@@ -1,0 +1,184 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - absence_types
+
+definitions:
+  streams:
+    absence_types:
+      type: DeclarativeStream
+      name: absence_types
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: absence/types/search
+          http_method: GET
+          request_headers:
+            Accept: text/plain
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/absence_types'
+  base_requester:
+    type: HttpRequester
+    url_base: https://integration.ditio.no/api
+    authenticator:
+      type: OAuthAuthenticator
+      client_id: "{{ config[\"client_id\"] }}"
+      grant_type: client_credentials
+      client_secret: "{{ config[\"client_secret\"] }}"
+      refresh_request_body: {}
+      token_refresh_endpoint: https://identity.ditio.no/connect/token
+
+streams:
+  - $ref: '#/definitions/streams/absence_types'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - client_id
+      - client_secret
+    properties:
+      client_id:
+        type: string
+        order: 0
+        title: Client ID
+        airbyte_secret: true
+      client_secret:
+        type: string
+        order: 1
+        title: Client secret
+        airbyte_secret: true
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    absence_types: true
+
+schemas:
+  absence_types:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      Id:
+        type:
+          - string
+          - 'null'
+      Name:
+        type:
+          - string
+          - 'null'
+      Type:
+        type:
+          - number
+          - 'null'
+      Active:
+        type:
+          - boolean
+          - 'null'
+      Export:
+        type:
+          - boolean
+          - 'null'
+      TypeId:
+        type:
+          - string
+          - 'null'
+      Enabled:
+        type:
+          - boolean
+          - 'null'
+      Sorting:
+        type:
+          - number
+          - 'null'
+      TypeName:
+        type:
+          - string
+          - 'null'
+      AllowEdit:
+        type:
+          - boolean
+          - 'null'
+      CompanyId:
+        type:
+          - string
+          - 'null'
+      CreatedAt:
+        type:
+          - string
+          - 'null'
+      CompanyIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      ModifiedAt:
+        type:
+          - string
+          - 'null'
+      RecVersion:
+        type:
+          - number
+          - 'null'
+      ProjRefType:
+        type:
+          - number
+          - 'null'
+      AllowAdditions:
+        type:
+          - boolean
+          - 'null'
+      CommentRequired:
+        type:
+          - boolean
+          - 'null'
+      CreatedByUserId:
+        type:
+          - string
+          - 'null'
+      ExportAsPayroll:
+        type:
+          - boolean
+          - 'null'
+      AvailableForTags:
+        type:
+          - array
+          - 'null'
+      CompanyIdsActive:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      ModifiedByUserId:
+        type:
+          - string
+          - 'null'
+      ThresholdUsedQty:
+        type:
+          - number
+          - 'null'
+      NotAvailableForTags:
+        type:
+          - array
+          - 'null'
+    additionalProperties: true

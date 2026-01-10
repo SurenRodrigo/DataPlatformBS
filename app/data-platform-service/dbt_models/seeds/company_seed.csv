@@ -1,0 +1,4 @@
+id,tenant_id,ext_company_id,company_guid,company_name,is_active,company_location_id
+1,1,2,fa1af352-ec59-482a-b969-d59a6d08402d,NRC Norge AS,TRUE,
+2,1,19,b8abe6c5-2209-40f0-b405-67d8d2181e30,NRC Kept AS,TRUE,
+3,2,20,40c52d53-4691-4f46-9a37-5c416bdde255,Gunnar Knutsen AS,TRUE

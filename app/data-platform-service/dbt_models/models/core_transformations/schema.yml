@@ -1,0 +1,887 @@
+version: 9
+
+models:
+  - name: push_candidates
+    description: "Stores information about external API push candidates"
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each push candidate."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: post_url
+        description: "The URL endpoint for the POST request."
+        dbt_tests:
+          - not_null
+
+      - name: headers
+        description: "JSONB field containing the headers for the POST request."
+        dbt_tests:
+          - not_null
+
+      - name: last_posted
+        description: "Timestamp of the last successful API post, NULL if never posted."
+
+  - name: ditio_to_tqm_candidate_data
+    description: "Stores the data payloads for push candidates"
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each push candidate data record."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: push_candidate_id
+        description: "Foreign key reference to the push_candidates table."
+        dbt_tests:
+          - not_null
+          - relationships:
+              to: ref('push_candidates')
+              field: id
+
+      - name: body
+        description: "JSONB field containing the body payload for the POST request."
+        dbt_tests:
+          - not_null
+
+  - name: tqm_to_ditio_candidate_data
+    description: "Maps and stores data payloads from TQM to be sent to Ditio for push candidates."
+    columns:
+      - name: composite_key
+        description: "Surrogate key generated from case_external_id and case_type_id to uniquely identify each record."
+        tests:
+          - unique
+          - not_null
+
+      - name: push_candidate_id
+        description: "Foreign key reference to the push_candidates table. Represents the push configuration."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('push_candidates')
+              field: id
+
+      - name: project_id
+        description: "TQM project ID associated with the case."
+        tests:
+          - not_null
+
+      - name: case_id
+        description: "External case ID from TQM, casted to string."
+        tests:
+          - not_null
+
+      - name: case_type_id
+        description: "Type identifier for the case."
+        tests:
+          - not_null
+
+      - name: ditio_case_id
+        description: "Case ID from Ditio system. Captured from c.comments field."
+        tests:
+          - not_null
+
+      - name: body
+        description: "JSONB payload to be sent to Ditio API, includes externalId, description, measures, status, and other placeholders."
+        tests:
+          - not_null
+
+      - name: content_hash
+        description: "Hash generated from content fields (external ID, description, measures) to detect changes."
+        tests:
+          - not_null
+
+      - name: inserted_at
+        description: "Timestamp indicating when the record was first inserted or significantly changed."
+        tests:
+          - not_null
+
+      - name: last_posted_at
+        description: "Timestamp of the last successful POST to Ditio. Null if not yet posted."
+        tests: []
+
+      - name: last_post_attempted_at
+        description: "Timestamp of the most recent POST attempt, successful or not."
+        tests: []
+
+      - name: last_post_status
+        description: "Status of the most recent post attempt (e.g., 'success', 'error')."
+        tests: []
+
+      - name: last_post_error
+        description: "Error message or exception returned from the last post attempt, if any."
+        tests: []
+
+  - name: employee_group
+    description: "Stores information about employee group."
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each employee group (UUID)."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: external_id
+        description: "External system identifier for each employee group (UUID)."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: description
+        description: "Name of the employee group"
+        dbt_tests:
+          - null
+
+  - name: employee
+    description: "Stores information about employee."
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each employee(UUID)."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: employee_guid
+        description: "External system identifier for each employee(UUID)."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: external_id
+        description: "External system identifier for each employee."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: employment_date
+        description: "Employeement date of the employee."
+        dbt_tests:
+          - null
+
+      - name: name
+        description: "Name of the employee."
+        dbt_tests:
+          - null
+
+      - name: first_name
+        description: "First name of the employee."
+        dbt_tests:
+          - null
+
+      - name: middle_name
+        description: "middle name of the employee."
+        dbt_tests:
+          - null
+
+      - name: last_name
+        description: "last name of the employee."
+        dbt_tests:
+          - null
+
+      - name: email
+        description: "Email of the employee."
+        dbt_tests:
+          - null
+
+      - name: username
+        description: "Username of the employee."
+        dbt_tests:
+          - null
+
+      - name: ssn
+        description: "SSN of the employee."
+        dbt_tests:
+          - null
+
+      - name: gender
+        description: "Gender of the employee."
+        dbt_tests:
+          - null
+
+      - name: corporate_seniority_date
+        description: "Date when the employee joined the corporation."
+        dbt_tests:
+          - null
+
+      - name: employment_end_date
+        description: "Last date of employment of the employee."
+        dbt_tests:
+          - null
+
+      - name: company_mobile_phone
+        description: "Company mobile phone number of the employee."
+        dbt_tests:
+          - null
+
+      - name: company_id
+        description: ""
+        dbt_tests:
+          - not_null
+
+      - name: legal_entity_id
+        description: ""
+        dbt_tests:
+          - not_null
+
+      - name: organizational_unit_id
+        description: ""
+        dbt_tests:
+          - not_null
+
+      - name: group_id
+        description: "Company reference id"
+        dbt_tests:
+          - not_null
+          - relationships:
+              to: ref('employee_group')
+              field: id
+
+      - name: job_role_id
+        description: "Company reference id"
+        dbt_tests:
+          - not_null
+          - relationships:
+              to: ref('employee_job_role')
+              field: id
+
+  - name: employee_job_role
+    description: "Stores information about employee job roles."
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each employee job role (UUID)."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: ext_job_role_guid
+        description: "External identifier for each employee job role (UUID)."
+        dbt_tests:
+          - not_null
+
+      - name: description
+        description: "Name of the employee job role"
+        dbt_tests:
+          - not_null
+
+  - name: company
+    description: "Stores information about company"
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each company record."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: external_id
+        description: "External system identifier."
+        dbt_tests:
+          - not_null
+
+      - name: company_guid
+        description: "External system identifier(UUID)."
+        dbt_tests:
+          - not_null
+
+      - name: company_name
+        description: "Name of the company."
+        dbt_tests:
+          - not_null
+
+      - name: isActive
+        description: "Status of the company."
+        dbt_tests:
+          - not_null
+
+
+  - name: time_type
+    description: "Stores information about time types."
+    columns:
+      - name: time_type_id
+        description: "Primary key, unique identifier for each time type (UUID)."
+        dbt_tests:
+          - unique
+          - not_null
+      - name: time_type_code
+        description: "code to identify each time type."
+        dbt_tests:
+          - not_null
+      - name: description
+        description: "description of the time type."
+      - name: time_type_key
+        description: "unique identifier to identify time type"
+        dbt_tests:
+          - unique
+          - not_null
+
+  - name: time_status
+    description: "Stores information about various time status."
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each status (UUID)."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: time_status_code
+        description: "Code name of the status."
+        dbt_tests:
+          - not_null
+      - name: description
+        description: "description of the time type."
+      - name: time_status_key
+        description: "unique identifier to identify time status"
+        dbt_tests:
+          - unique
+          - not_null
+  - name: time_record
+    description: "Stores time records for each month."
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each record (UUID)."
+        tests:
+          - unique
+          - not_null
+      - name: time_type_id
+        description: "References the type of time recorded from the time_type table."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('time_type')
+              field: time_type_id
+      - name: time_status_id
+        description: "References the status of the record from the time_status table."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('time_status')
+              field: id
+      - name: time_type_key
+        description: "Unique key identifying the time type."
+        tests:
+          - not_null
+      - name: time_type
+        description: "Code representing the type of time recorded."
+      - name: hours
+        description: "Number of hours recorded."
+        tests:
+          - not_null
+      - name: record_id
+        description: "Record identifier from the source system."
+        tests:
+          - not_null
+      - name: date
+        description: "Date when the time was recorded."
+        tests:
+          - not_null
+      - name: work_year
+        description: "Work year corresponding to the record."
+      - name: ext_employee_id
+        description: "External employee identifier from the source system."
+        tests:
+          - not_null
+      - name: employee_id
+        description: "Internal employee identifier."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('employee')
+              field: id
+      - name: accouting_period_id
+        description: "Accounting period identifier (note: misspelled as accouting_period_id)."
+      - name: project_id
+        description: "Identifier for the associated project."
+      - name: time_status_code
+        description: "Code representing the time status."
+        tests:
+          - not_null
+      - name: company_id
+        description: "Identifier for the associated company."
+      - name: division_id
+        description: "Identifier for the division (legal entity)."
+        tests:
+          - not_null
+      - name: organizational_unit_id
+        description: "Identifier for the associated organizational unit/department."
+        tests:
+          - not_null
+      - name: data_source
+        description: "Indicates the source of the record (e.g. 'icore' or 'ditio')."
+      - name: project_task_id
+        description: "Task identifier for ditio sourced records."
+      - name: description
+        description: "Description for ditio sourced records."
+      - name: description_internal
+        description: "Internal description for ditio sourced records."
+      - name: approved_date_time
+        description: "Timestamp when the record was approved."
+      - name: started_date_time
+        description: "Timestamp when the record started."
+      - name: stop_date_time
+        description: "Timestamp when the record stopped."
+      - name: created_date_time
+        description: "Timestamp when the record was created."
+      - name: modified_date_time
+        description: "Timestamp when the record was last modified."
+      - name: payroll_approved_date_time
+        description: "Timestamp when payroll approval was granted."
+      - name: is_deleted
+        description: "Flag indicating whether the record is deleted."
+      - name: payroll_approved
+        description: "Flag indicating whether payroll is approved."
+      - name: approved
+        description: "Flag indicating whether the record is approved."
+      - name: approved_by_name
+        description: "Name of the person who approved the record."
+      - name: invoiced
+        description: "Flag indicating whether the record has been invoiced."
+      - name: resource_id
+        description: "Identifier for the associated resource."
+      - name: user_company_id
+        description: "Identifier for the user company associated with the record."
+
+  - name: case
+    description: "Stores information about cases"
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each status."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: legal_entity_id
+        description: "Id of the legal entity"
+        dbt_tests:
+          - not_null
+
+      - name: project_id
+        description: "Project Id."
+        dbt_tests:
+          - not_null
+
+      - name: case_external_id
+        description: "External ID of the case"
+        dbt_tests:
+          - not_null
+
+      - name: case_url
+        description: "Case URL"
+        dbt_tests:
+          - not_null
+
+      - name: position
+        description: "Position"
+        dbt_tests:
+          - not_null
+
+      - name: project_level_full_path
+        description: "Full path of project level"
+        dbt_tests:
+          - not_null
+
+      - name: project_level_name
+        description: "Name of project level"
+        dbt_tests:
+          - not_null
+
+      - name: project_level_id
+        description: "ID of project level"
+        dbt_tests:
+          - not_null
+
+      - name: date_occurred
+        description: "Date Occured"
+        dbt_tests:
+          - not_null
+
+      - name: date_published
+        description: "Date Published"
+        dbt_tests:
+          - not_null
+
+      - name: deadline
+        description: "Deadline"
+        dbt_tests:
+          - not_null
+
+      - name: date_closed
+        description: "Date closed"
+        dbt_tests:
+          - not_null
+
+      - name: case_type_name
+        description: "Name of Case Type"
+        dbt_tests:
+          - not_null
+
+      - name: case_type_id
+        description: "Case Type"
+        dbt_tests:
+          - not_null
+
+      - name: description
+        description: "Description"
+        dbt_tests:
+          - not_null
+
+      - name: organization_level_3_name
+        description: "Name of Organization level 3"
+        dbt_tests:
+          - not_null
+
+      - name: organization_level_3_id
+        description: "ID of Organization level 3"
+        dbt_tests:
+          - not_null
+
+      - name: employee_id
+        description: "Employee ID"
+        dbt_tests:
+          - not_null
+
+      - name: originator_email
+        description: "Email of originator"
+        dbt_tests:
+          - not_null
+
+      - name: originator_name
+        description: "Name of originator"
+        dbt_tests:
+          - not_null
+
+      - name: originator_id
+        description: "ID of originator"
+        dbt_tests:
+          - not_null
+
+      - name: status_key
+        description: "Status key"
+        dbt_tests:
+          - not_null
+
+      - name: status_name
+        description: "Status Name"
+        dbt_tests:
+          - not_null
+
+  - name: project
+    description: "Stores information about projects from ditio"
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each status."
+        dbt_tests:
+          - unique
+          - not_null
+      - name: tenant_id
+        description: "Tenant id, currently set to NULL."
+      - name: company_id
+        description: "Identifier for the company associated with the project."
+      - name: division_id
+        description: "Identifier for the division associated with the project."
+      - name: department_id
+        description: "Identifier for the department associated with the project."
+        dbt_tests:
+          - not_null
+      - name: ext_project_id
+        description: "External project identifier."
+        dbt_tests:
+          - not_null
+      - name: companyName
+        description: "Name of the company associated with the project."
+        dbt_tests:
+          - not_null
+      - name: projectName
+        description: "Name of the project."
+        dbt_tests:
+          - not_null
+      - name: projectNumber
+        description: "Number of the project."
+        dbt_tests:
+          - not_null
+      - name: companyData
+        description: "Additional company data related to the project."
+      - name: externalNumber
+        description: "External number associated with the project."
+      - name: externalDim01
+        description: "External dimension 01, represents department external_id."
+        dbt_tests:
+          - not_null
+      - name: externalDim02
+        description: "External dimension 02."
+      - name: createdDateTime
+        description: "Timestamp when the project was created."
+      - name: createdBy
+        description: "User who created the project."
+      - name: modifiedDateTime
+        description: "Timestamp when the project was last modified."
+      - name: modifiedBy
+        description: "User who last modified the project."
+      - name: isExternal
+        description: "Indicates if the project is external."
+      - name: isDeleted
+        description: "Indicates if the project is deleted."
+      - name: deletedDateTime
+        description: "Timestamp when the project was deleted."
+      - name: deletedBy
+        description: "User who deleted the project."
+
+  - name: project_task
+    description: "Stores information about project tasks from ditio"
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each project task."
+        dbt_tests:
+          - unique
+          - not_null
+      - name: project_id
+        description: "Project identifier, currently set to NULL."
+      - name: tenant_id
+        description: "Tenant identifier, currently set to NULL."
+      - name: ext_project_task_id
+        description: "External project task identifier."
+      - name: task_name
+        description: "Name of the task."
+      - name: task_full_Path_Name
+        description: "Full path name of the task."
+      - name: task_folder_path_name
+        description: "Folder path name of the task."
+      - name: task_parent_name
+        description: "Parent name of the task."
+      - name: task_description
+        description: "Description of the task, currently set to NULL."
+      - name: is_active
+        description: "Indicates if the task is active, currently set to NULL."
+      - name: work_description_short
+        description: "Short description of the work, currently set to NULL."
+      - name: work_description
+        description: "Detailed description of the work, currently set to NULL."
+      - name: unit_id
+        description: "Identifier for the unit, currently set to NULL."
+
+      - name: created_date_time
+        description: "Timestamp when the task was created."
+      - name: created_by
+        description: "User who created the task."
+      - name: modified_date_time
+        description: "Timestamp when the task was last modified."
+      - name: modified_by
+        description: "User who last modified the task."
+      - name: deleted_date_time
+        description: "Timestamp when the task was deleted."
+      - name: deleted_by
+        description: "User who deleted the task."
+      - name: data_source_id
+        description: "Identifier for the data source, currently set to NULL."
+
+  - name: project_data_source
+    description: "Stores information about project data source"
+    columns:
+      - name: id
+        description: "Primary key, unique identifier for each record."
+        dbt_tests:
+          - unique
+          - not_null
+      - name: tenant_id
+        description: "Tenant identifier"
+      - name: project_id
+        description: "Identifier for the project"
+      - name: data_source_id
+        description: "Data source identifier"
+      - name: ext_project_id
+        description: "External project identifier"
+      - name: is_active
+        description: "Indicates if the project is active"
+
+  - name: project_variation
+    description: "Stores information about project variations."
+    columns:
+      - name: project_variation_id
+        description: "Surrogate key generated from project ID and case ID."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: tenant_id
+        description: "ID of the tenant (currently null)."
+
+      - name: project_id
+        description: "ID of the associated project."
+        dbt_tests:
+          - not_null
+
+      - name: project_name
+        description: "Name of the associated project."
+        dbt_tests:
+          - not_null
+
+      - name: ext_variation_id
+        description: "External variation ID from the case."
+        dbt_tests:
+          - not_null
+
+      - name: name
+        description: "Case number, serving as the name of the project variation."
+
+      - name: description
+        description: "Title of the case, describing the project variation."
+        dbt_tests:
+          - not_null
+
+      - name: date_published
+        description: "Date when the case was created."
+        dbt_tests:
+          - not_null
+
+      - name: deadline
+        description: "Due date of the case."
+        dbt_tests:
+          - not_null
+
+      - name: date_closed
+        description: "Date when the case was closed (currently null)."
+
+      - name: variation_type_name
+        description: "Type of case, representing the variation type."
+        dbt_tests:
+          - not_null
+
+      - name: variation_type_id
+        description: "ID of the variation type (currently null)."
+
+      - name: employee_id
+        description: "Employee ID associated with the project variation (currently null)."
+
+      - name: sender
+        description: "Sender of the case."
+        dbt_tests:
+          - not_null
+
+      - name: receiver
+        description: "Receiver of the case."
+        dbt_tests:
+          - not_null
+
+      - name: created_by
+        description: "User who created the case."
+        dbt_tests:
+          - not_null
+
+      - name: total_amount
+        description: "Total amount associated with the case."
+        dbt_tests:
+          - not_null
+
+      - name: accepted_amount
+        description: "Accepted amount from the case."
+        dbt_tests:
+          - not_null
+
+      - name: declined_amount
+        description: "Declined amount from the case."
+        dbt_tests:
+          - not_null
+
+      - name: not_handled_amount
+        description: "Amount that has not been handled from the case."
+        dbt_tests:
+          - not_null
+
+  - name: project_external_inputs
+    description: "Stores information about external inputs."
+    columns:
+      - name: project_external_input_id
+        description: "Surrogate key generated from few common values in the row."
+        dbt_tests:
+          - unique
+          - not_null
+
+      - name: tenant_id
+        description: "ID of the tenant (currently null)."
+
+      - name: project_id
+        description: "ID of the associated project."
+        dbt_tests:
+          - not_null
+
+      - name: organizational_unit_id
+        description: "Department id for the input."
+        dbt_tests:
+          - not_null
+
+      - name: external_input_type_id
+        description: "Foreign key for the external input types."
+        dbt_tests:
+          - not_null
+
+      - name: input_date_time
+        description: "Input created date."
+
+      - name: month
+        description: "Input month."
+        dbt_tests:
+          - not_null
+
+      - name: year
+        description: "Input year."
+        dbt_tests:
+          - not_null
+
+      - name: value
+        description: "Actual value for the input"
+        dbt_tests:
+          - not_null
+
+      - name: is_active
+        description: "Is the value is active or not."
+
+  - name: ditio_case
+    description: "Incident registration data extracted from Ditio's source system."
+    columns:
+      - name: id
+        description: "Surrogate key generated from 'dito_case.id' to uniquely identify each incident."
+        tests:
+          - unique
+          - not_null
+
+      - name: base_type
+        description: "Type of the base incident."
+        tests:
+          - not_null
+
+      - name: risk_text
+        description: "Textual description of the risk associated with the incident."
+
+      - name: created_at
+        description: "Timestamp when the incident was created."
+
+      - name: description
+        description: "Detailed description of the incident."
+
+      - name: title
+        description: "Title of the incident record."
+
+      - name: measures
+        description: "Measures or actions taken for the incident."
+
+      - name: project_id
+        description: "Foreign key linking the incident to a project."
+        tests:
+          - not_null
+
+      - name: longitude
+        description: "Longitude coordinate of the incident location."
+
+      - name: latitude
+        description: "Latitude coordinate of the incident location."
+
+      - name: image_file_references_id_ref
+        description: "Reference ID for the associated image file (from JSONB)."
+
+      - name: file_ids
+        description: "Placeholder for future file ID linkage (currently hardcoded empty)."
+
+      - name: image_file_references_file_type
+        description: "File type of the associated image (from JSONB)."
+
+      - name: file_name
+        description: "File name of the associated image (from JSONB)."

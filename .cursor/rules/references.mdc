@@ -1,0 +1,29 @@
+---
+alwaysApply: true
+---
+When trouble shooting errors, after two attempts pls search internet for solution. Especially refer to the following when troubleshooting Microsoft Agent Framework related issues:
+- https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/quick-start?pivots=programming-language-csharp
+- https://github.com/microsoft/agent-framework/blob/main/dotnet/samples/GettingStarted/AgentProviders/README.md
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/run-agent?pivots=programming-language-csharp
+- https://github.com/microsoft/agent-framework/blob/main/dotnet/samples/GettingStarted/Agents/README.md
+- https://github.com/microsoft/agent-framework/blob/main/dotnet/samples/GettingStarted/AgentProviders/README.md
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/images?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/multi-turn-conversation?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/function-tools?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/function-tools-approvals?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/structured-output?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/agent-as-function-tool?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/agent-as-mcp-tool?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/enable-observability?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/middleware?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/persisted-conversation?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/third-party-chat-history-storage?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/agents/memory?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/workflows/simple-sequential-workflow?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/workflows/simple-concurrent-workflow?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/workflows/agents-in-workflows?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/workflows/workflow-with-branching-logic?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/workflows/requests-and-responses?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/workflows/checkpointing-and-resuming?pivots=programming-language-csharp
+- https://learn.microsoft.com/en-us/agent-framework/tutorials/workflows/visualization

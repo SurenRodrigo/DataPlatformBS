@@ -1,0 +1,35 @@
+{
+  "code_locations": [
+    {
+      "name": "sweden_data_sync",
+      "enabled": true,
+      "description": "Sweden data sync code location for Sweden-specific data pipeline",
+      "module": "dagster_code.sweden_data_sync",
+      "port": 4270,
+      "host": "data-platform-service",
+      "metadata": {
+        "team": "data",
+        "domain": "sweden_data_sync",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "name": "bridgestone_data_sync",
+      "enabled": true,
+      "description": "Bridgestone data sync code location for Bridgestone data pipeline",
+      "module": "dagster_code.bridgestone_data_sync",
+      "port": 4273,
+      "host": "data-platform-service",
+      "metadata": {
+        "team": "data",
+        "domain": "bridgestone_data_sync",
+        "version": "1.0.0"
+      }
+    }
+  ],
+  "config": {
+    "workspace_name": "appbase-dagster-workspace",
+    "description": "AppBase Data Platform Dagster Workspace",
+    "version": "1.0.0"
+  }
+}

@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: cases_details_view_fact
+    description: "Flattened cases details model for project management reporting with metric mapping and dummy records for complete time series visualization"
+    columns:
+      - name: metric
+        description: "Mapped metric value based on KPI ID (H1, H2, M1, M2, M3)"
+        tests:
+          - not_null
+      - name: value
+        description: "Value for counting - 1 for actual records, 0 for dummy records"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: year_occurred
+        description: "Year when the case occurred"
+        tests:
+          - not_null
+      - name: month_occurred
+        description: "Month when the case occurred (1-12)"
+        tests:
+          - not_null
+      - name: month
+        description: "Month name abbreviation (JAN, FEB, etc.)"
+      - name: case_external_id
+        description: "External case identifier (NULL for dummy records)"
+      - name: kpi_id
+        description: "KPI identifier (NULL for dummy records)"
+      - name: case_type_name
+        description: "Name of the case type (NULL for dummy records)"
+      - name: status_name
+        description: "Status of the case (NULL for dummy records)"
+      - name: tenant_id
+        description: "Tenant identifier (NULL for dummy records)"
+      - name: company_id
+        description: "Company identifier (NULL for dummy records)"
+      - name: division_id
+        description: "Division identifier (NULL for dummy records)"
+      - name: project_id
+        description: "Project identifier (NULL for dummy records)"
+      - name: data_source_name
+        description: "Name of the data source (NULL for dummy records)" 

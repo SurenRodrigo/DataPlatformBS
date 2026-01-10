@@ -1,0 +1,255 @@
+version: "3.8"
+#https://github.com/compose-spec/compose-spec/blob/master/spec.md#using-extensions-as-fragments
+x-logging: &default-logging
+  options:
+    max-size: "100m"
+    max-file: "5"
+  driver: json-file
+
+services:
+  # Application initialization service
+  appbase-init:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.appbase-init
+    image: ${APPBASE_INIT_IMAGE}
+    container_name: appbase-init
+    restart: "no"
+    environment:
+      # Database connection for application initialization
+      APPBASE_DB_HOST: ${APPBASE_DB_HOST}
+      APPBASE_DB_PORT: ${APPBASE_DB_PORT}
+      APPBASE_DB_USER: ${APPBASE_DB_USER}
+      APPBASE_DB_PASSWORD: ${APPBASE_DB_PASSWORD}
+      APPBASE_DB_NAME: ${APPBASE_DB_NAME}
+      
+      # Hasura connection for metadata initialization
+      HASURA_URL: ${HASURA_URL}
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
+      HASURA_GRAPHQL_DATABASE_URL: postgres://${APPBASE_DB_USER}:${APPBASE_DB_PASSWORD}@${APPBASE_DB_HOST}:${APPBASE_DB_PORT}/${APPBASE_DB_NAME}
+      
+      # BI tool configuration (service states read from service.yaml, not env vars)
+      METABASE_URL: ${METABASE_URL}
+      METABASE_USER: ${METABASE_USER}
+      METABASE_PASSWORD: ${METABASE_PASSWORD}
+      METABASE_USE_SSL: ${METABASE_USE_SSL}
+      METABASE_APPBASE_DB_HOST: ${METABASE_APPBASE_DB_HOST}
+      SUPERSET_URL: ${SUPERSET_URL}
+      SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER}
+      SUPERSET_ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
+      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      SUPERSET_APPBASE_DB_HOST: ${SUPERSET_APPBASE_DB_HOST}
+      
+      # Dagster configuration moved to data-manager service
+      
+      # Application configuration
+      APP_BASE_SECRET: ${APP_BASE_SECRET}
+      NODE_ENV: ${NODE_ENV}
+      APPBASE_INIT_LOG_LEVEL: ${APPBASE_INIT_LOG_LEVEL}
+      
+      # Database configuration for services
+      APPBASE_CONFIG_DB_HOST: ${APPBASE_CONFIG_DB_HOST}
+      APPBASE_CONFIG_DB_PORT: ${APPBASE_CONFIG_DB_PORT}
+      APPBASE_CONFIG_DB_USER: ${APPBASE_CONFIG_DB_USER}
+      APPBASE_CONFIG_DB_PASSWORD: ${APPBASE_CONFIG_DB_PASSWORD}
+      APPBASE_CONFIG_DB_NAME: ${APPBASE_CONFIG_DB_NAME}
+      
+      # Service database names (for verification)
+      HASURA_DB_NAME: ${HASURA_DB_NAME}
+      METABASE_DB_NAME: ${METABASE_DB_NAME}
+      SUPERSET_DB_NAME: ${SUPERSET_DB_NAME}
+      
+      # Database migration configuration
+      RUN_DB_MIGRATIONS: ${RUN_DB_MIGRATIONS}
+
+      # PyAirbyte cache Sweden database configuration for Swedish connectors
+      PYAIRBYTE_CACHE_SWEDEN_DB_HOST: ${PYAIRBYTE_CACHE_SWEDEN_DB_HOST}
+      PYAIRBYTE_CACHE_SWEDEN_DB_PORT: ${PYAIRBYTE_CACHE_SWEDEN_DB_PORT}
+      PYAIRBYTE_CACHE_SWEDEN_DB_USER: ${PYAIRBYTE_CACHE_SWEDEN_DB_USER}
+      PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD: ${PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD}
+      PYAIRBYTE_CACHE_SWEDEN_DB_NAME: ${PYAIRBYTE_CACHE_SWEDEN_DB_NAME}
+    depends_on: []
+      # Note: Platform services (db, hasura) must be running before starting appbase-init
+      # These dependencies are managed at the orchestration level, not in this compose file
+    volumes:
+      # Mount service.yaml from project root for service configuration
+      - ../service.yaml:/app/service.yaml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h ${APPBASE_DB_HOST} -p ${APPBASE_DB_PORT} -U ${APPBASE_DB_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - app-base-network
+
+  # Data Platform Service for Dagster orchestration
+  data-platform-service:
+    profiles: ["data-platform-service"]
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.data-platform-service
+    image: appbase/data-manager:multistage
+    container_name: data-platform-service
+    restart: unless-stopped
+    environment:
+      # Dagster configuration - MUST match platform exactly
+      DAGSTER_HOME: /opt/dagster/dagster_home
+      DAGSTER_GRPC_HOST: 0.0.0.0
+      DAGSTER_GRPC_PORT: 4266
+      DAGSTER_URL: http://dagster-webserver:3030
+      
+      # Database connection for Dagster assets - MUST match platform exactly
+      DATABASE_USER: ${APPBASE_DB_USER}
+      DATABASE_PASSWORD: ${APPBASE_DB_PASSWORD}
+      DATABASE_HOST: ${APPBASE_DB_HOST}
+      DATABASE_PORT: ${APPBASE_DB_PORT}
+      DAGSTER_DB_NAME: ${DAGSTER_DB_NAME?}
+      
+      # Additional database environment variables for Dagster assets
+      APPBASE_DB_HOST: ${APPBASE_DB_HOST}
+      APPBASE_DB_PORT: ${APPBASE_DB_PORT}
+      APPBASE_DB_USER: ${APPBASE_DB_USER}
+      APPBASE_DB_PASSWORD: ${APPBASE_DB_PASSWORD}
+      APPBASE_DB_NAME: ${APPBASE_DB_NAME}
+      APPBASE_DB_NAME_SW: ${APPBASE_DB_NAME_SW}
+      
+      # Application configuration
+      APP_BASE_SECRET: ${APP_BASE_SECRET}
+      NODE_ENV: ${NODE_ENV}
+      
+      # PyAirbyte cache database configuration
+      PYAIRBYTE_CACHE_DB_HOST: ${PYAIRBYTE_CACHE_DB_HOST}
+      PYAIRBYTE_CACHE_DB_PORT: ${PYAIRBYTE_CACHE_DB_PORT}
+      PYAIRBYTE_CACHE_DB_USER: ${PYAIRBYTE_CACHE_DB_USER}
+      PYAIRBYTE_CACHE_DB_PASSWORD: ${PYAIRBYTE_CACHE_DB_PASSWORD}
+      PYAIRBYTE_CACHE_DB_NAME: ${PYAIRBYTE_CACHE_DB_NAME}
+
+      # PyAirbyte cache Sweden database configuration for Swedish connectors
+      PYAIRBYTE_CACHE_SWEDEN_DB_HOST: ${PYAIRBYTE_CACHE_SWEDEN_DB_HOST}
+      PYAIRBYTE_CACHE_SWEDEN_DB_PORT: ${PYAIRBYTE_CACHE_SWEDEN_DB_PORT}
+      PYAIRBYTE_CACHE_SWEDEN_DB_USER: ${PYAIRBYTE_CACHE_SWEDEN_DB_USER}
+      PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD: ${PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD}
+      PYAIRBYTE_CACHE_SWEDEN_DB_NAME: ${PYAIRBYTE_CACHE_SWEDEN_DB_NAME}
+
+      # Connector-specific config overrides (JSON map keyed by connector name)
+      PYAIRBYTE_CONNECTOR_CONFIGS: ${PYAIRBYTE_CONNECTOR_CONFIGS}
+      
+      # SharePoint integration configuration
+      SP_CLIENT_ID: ${SP_CLIENT_ID}
+      SP_CLIENT_SECRET: ${SP_CLIENT_SECRET}
+      SP_SITE_URL: ${SP_SITE_URL}
+      SP_FILE_LOCATION: ${SP_FILE_LOCATION}
+      HR_FILE_NAME: ${HR_FILE_NAME}
+      HSE_FILE_NAME: ${HSE_FILE_NAME}
+      
+        # Sweden SharePoint integration configuration
+      SE_SP_CLIENT_ID: ${SE_SP_CLIENT_ID}
+      SE_SP_CLIENT_SECRET: ${SE_SP_CLIENT_SECRET}
+      SE_SP_SITE_URL: ${SE_SP_SITE_URL}
+      SE_SP_FILE_LOCATION: ${SE_SP_FILE_LOCATION}
+      SE_DATA_FILE_NAME: ${SE_DATA_FILE_NAME}
+      #Sweden SharePoint Graph settings
+      SE_SP_TENANT_ID: ${SE_SP_TENANT_ID}
+      SE_SP_HOSTNAME: ${SE_SP_HOSTNAME}
+      SE_SP_SITE_PATH: ${SE_SP_SITE_PATH}
+      SE_SP_DRIVE_NAME: ${SE_SP_DRIVE_NAME}
+      SE_SP_SYNC_FILE_PATH: ${SE_SP_SYNC_FILE_PATH}
+      
+    
+      TQM_OL1_KEY: ${TQM_OL1_KEY}
+      TQM_TOKEN: ${TQM_TOKEN}
+      TQM_CREATE_CASE_URL: ${TQM_CREATE_CASE_URL}
+
+      DITIO_AUTH_TOKEN_URL: ${DITIO_AUTH_TOKEN_URL}
+      DITIO_AUTH_CLIENT_ID: ${DITIO_AUTH_CLIENT_ID}
+      DITIO_AUTH_CLIENT_SECRET: ${DITIO_AUTH_CLIENT_SECRET}
+      DITIO_AUTH_CLIENT_ID_KEPT: ${DITIO_AUTH_CLIENT_ID_KEPT}
+      DITIO_AUTH_CLIENT_SECRET_KEPT: ${DITIO_AUTH_CLIENT_SECRET_KEPT}
+      
+      DITIO_KEPT_COMPANY_ID: ${DITIO_KEPT_COMPANY_ID}
+      DITIO_PATCH_CASE_URL: ${DITIO_PATCH_CASE_URL}
+      DITIO_CREATE_PROJECT_URL: ${DITIO_CREATE_PROJECT_URL}
+      DITIO_CREATE_TASK_URL: ${DITIO_CREATE_TASK_URL}
+      DITIO_GET_TASKS_BY_TYPE_URL: ${DITIO_GET_TASKS_BY_TYPE_URL}
+      # Test connector configuration for Ditio and TQM
+      USE_DITIO_TEST_CONNECTORS: ${USE_DITIO_TEST_CONNECTORS}
+      USE_TQM_TEST_CONNECTORS: ${USE_TQM_TEST_CONNECTORS}
+
+      # AØE Ditio API configuration
+      AOE_DITIO_CLIENT_ID: ${AOE_DITIO_CLIENT_ID}
+      AOE_DITIO_CLIENT_SECRET: ${AOE_DITIO_CLIENT_SECRET}
+      AOE_DITIO_AUTH_TOKEN_URL: ${AOE_DITIO_AUTH_TOKEN_URL}
+      AOE_DITIO_API_BASE_URL: ${AOE_DITIO_API_BASE_URL}
+      AOE_DITIO_CREATE_CASE_URL: ${AOE_DITIO_CREATE_CASE_URL}
+
+      # Endre api configuration
+      ENDRE_API_BASE_URL: ${ENDRE_API_BASE_URL}
+      ENDRE_API_USERNAME: ${ENDRE_API_USERNAME}
+      ENDRE_API_PASSWORD: ${ENDRE_API_PASSWORD}
+
+      #Scania auth configuration
+      SCANIA_CLIENT_ID: ${SCANIA_CLIENT_ID}
+      SCANIA_SECRET_KEY: ${SCANIA_SECRET_KEY}
+      SCANIA_BASE_URL: ${SCANIA_BASE_URL}
+
+      # SharePoint configuration
+      GK_SP_TENANT_ID: ${GK_SP_TENANT_ID}
+      GK_SP_CLIENT_ID: ${GK_SP_CLIENT_ID}
+      GK_SP_CLIENT_SECRET: ${GK_SP_CLIENT_SECRET}
+      GK_SP_HOSTNAME: ${GK_SP_HOSTNAME}
+      GK_SP_SITE_PATH: ${GK_SP_SITE_PATH}
+      GK_SP_DRIVE_NAME: ${GK_SP_DRIVE_NAME}
+      GK_SP_VISMA_SYNC_FILE_PATH: ${GK_SP_VISMA_SYNC_FILE_PATH}
+      GK_SP_VISMA_SYNC_SHEET_NAME: ${GK_SP_VISMA_SYNC_SHEET_NAME}
+      GK_SP_POTENTIAL_PROJECT_SYNC_FILE_PATH: ${GK_SP_POTENTIAL_PROJECT_SYNC_FILE_PATH}
+      GK_SP_POTENTIAL_PROJECT_SYNC_SHEET_NAME: ${GK_SP_POTENTIAL_PROJECT_SYNC_SHEET_NAME}
+      GK_SP_COMPELLO_SYNC_FILE_PATH: ${GK_SP_COMPELLO_SYNC_FILE_PATH}
+      GK_SP_COMPELLO_SYNC_SHEET_NAME: ${GK_SP_COMPELLO_SYNC_SHEET_NAME}
+      GK_AZURE_CONTAINER_SAS_URL: ${GK_AZURE_CONTAINER_SAS_URL}
+
+      # Hasura configuration
+      HASURA_URL: ${HASURA_URL}
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
+          
+    depends_on:
+      - appbase-init
+    volumes:
+      # Mount Dagster code locations for hot reloading
+      - ./data-platform-service/dagster_code:/app/dagster_code:delegated
+      # CRITICAL: Use shared Dagster storage volume (same as platform)
+      - dagster_shared_storage:/opt/dagster/dagster_home
+      # Mount dbt models for DBT CLI and Dagster assets
+      - ./data-platform-service/dbt_models:/app/dbt_models:delegated
+      # Mount Sweden-specific dbt models
+      - ./data-platform-service/dbt_models_se:/app/dbt_models_se:delegated
+      # Mount data-manager directory for PyAirbyte and sync functions
+      - ./data-platform-service/data-manager:/app/data-manager:delegated
+    ports:
+      - "4266:4266"  # gRPC server port
+      - "4270:4270"  # Sweden data sync gRPC server port
+      - "4273:4273"  # Bridgestone data sync gRPC server port
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4266/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - app-base-network
+    logging: *default-logging
+
+volumes:
+  dagster_home:
+    name: dagster_home
+  dagster_shared_storage:
+    name: dagster_shared_storage
+    external: true
+
+networks:
+  app-base-network:
+    name: app-base-network
+    external: true 

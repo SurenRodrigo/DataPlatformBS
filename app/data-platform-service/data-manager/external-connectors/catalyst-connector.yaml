@@ -1,0 +1,2763 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - organization
+
+definitions:
+  streams:
+    organization:
+      type: DeclarativeStream
+      name: organization
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: organizations
+          http_method: GET
+          request_headers:
+            Api-Version: v3
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - organizations
+      primary_key:
+        - guid
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/organization'
+    employee_history:
+      type: DeclarativeStream
+      name: employee_history
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: employees
+          http_method: GET
+          request_headers:
+            Api-Version: v3
+          request_parameters:
+            includeInactive: 'true'
+            auditChangesSince: '2018-01-01'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - employees
+      primary_key:
+        - guid
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/employee_history'
+  base_requester:
+    type: HttpRequester
+    url_base: https://nrc.catalystone.com/mono/api/
+    authenticator:
+      type: SessionTokenAuthenticator
+      login_requester:
+        type: HttpRequester
+        path: accesstoken
+        url_base: https://nrc.catalystone.com/mono/api
+        http_method: GET
+        authenticator:
+          type: NoAuth
+        request_headers:
+          Client-id: "{{ config[\"client_id\"] }}"
+          Grant-Type: client_credentials
+          User-Agent: insomnia/10.1.1
+          Api-Version: v3
+          Client-Secret: "{{ config[\"client_secret\"] }}"
+        request_parameters: {}
+      session_token_path:
+        - access_token
+      request_authentication:
+        type: ApiKey
+        inject_into:
+          type: RequestOption
+          field_name: Access-Token
+          inject_into: header
+
+streams:
+  - $ref: '#/definitions/streams/organization'
+  - $ref: '#/definitions/streams/employee_history'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - client_id
+      - client_secret
+    properties:
+      client_id:
+        type: string
+        description: Client ID for authentication with Catalyst API
+        order: 0
+        title: Client ID
+        airbyte_secret: true
+      client_secret:
+        type: string
+        description: Client Secret for authentication with Catalyst API
+        order: 1
+        title: Client Secret
+        airbyte_secret: true
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    organization: true
+    employee_history: true
+
+schemas:
+  organization:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      guid:
+        type:
+          - string
+          - 'null'
+      field:
+        type:
+          - object
+          - 'null'
+        properties:
+          '0':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+          '400':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+          '401':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  organizationId:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+          '404':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+          '405':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+          '406':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  username:
+                    type:
+                      - string
+                      - 'null'
+                  employeeId:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              inheritToChild:
+                type:
+                  - string
+                  - 'null'
+          '10001':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              inheritToChild:
+                type:
+                  - string
+                  - 'null'
+          '10002':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              inheritToChild:
+                type:
+                  - string
+                  - 'null'
+      isActive:
+        type:
+          - string
+          - 'null'
+      createdOn:
+        type:
+          - string
+          - 'null'
+      lastModified:
+        type:
+          - string
+          - 'null'
+      organizationId:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  employee_history:
+    type: object
+    $schema: http://json-schema.org/schema#
+    required:
+      - guid
+    properties:
+      guid:
+        type: string
+      name:
+        type:
+          - string
+          - 'null'
+      field:
+        type:
+          - object
+          - 'null'
+        properties:
+          '0':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '1':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  username:
+                    type:
+                      - string
+                      - 'null'
+                  employeeId:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '2':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '3':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '7':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '8':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  uniqueImportId:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        uniqueImportId:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+              plannedChangeAudit:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        uniqueImportId:
+                          type:
+                            - string
+                            - 'null'
+                    status:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    lastModified:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+          '9':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  username:
+                    type:
+                      - string
+                      - 'null'
+                  employeeId:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        username:
+                          type:
+                            - string
+                            - 'null'
+                        employeeId:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+              plannedChange:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  data:
+                    type:
+                      - object
+                      - 'null'
+                    properties:
+                      guid:
+                        type:
+                          - string
+                          - 'null'
+                      value:
+                        type:
+                          - string
+                          - 'null'
+                      username:
+                        type:
+                          - string
+                          - 'null'
+                      employeeId:
+                        type:
+                          - string
+                          - 'null'
+                  status:
+                    type:
+                      - string
+                      - 'null'
+                  dataValidTo:
+                    type:
+                      - string
+                      - 'null'
+                  lastModified:
+                    type:
+                      - string
+                      - 'null'
+                  dataValidFrom:
+                    type:
+                      - string
+                      - 'null'
+          '15':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  alternativeExportValue:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        alternativeExportValue:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+              plannedChange:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  data:
+                    type:
+                      - object
+                      - 'null'
+                    properties:
+                      guid:
+                        type:
+                          - string
+                          - 'null'
+                      value:
+                        type:
+                          - string
+                          - 'null'
+                      alternativeExportValue:
+                        type:
+                          - string
+                          - 'null'
+                  status:
+                    type:
+                      - string
+                      - 'null'
+                  dataValidTo:
+                    type:
+                      - string
+                      - 'null'
+                  lastModified:
+                    type:
+                      - string
+                      - 'null'
+                  dataValidFrom:
+                    type:
+                      - string
+                      - 'null'
+              plannedChangeAudit:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        alternativeExportValue:
+                          type:
+                            - string
+                            - 'null'
+                    status:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    lastModified:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+          '19':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  alternativeExportValue:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        alternativeExportValue:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '22':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '26':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '37':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '38':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '101':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '1002':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  alternativeExportValue:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        alternativeExportValue:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '1003':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '1005':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '1028':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+              plannedChange:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  data:
+                    type:
+                      - object
+                      - 'null'
+                    properties:
+                      guid:
+                        type:
+                          - string
+                          - 'null'
+                      value:
+                        type:
+                          - string
+                          - 'null'
+                  status:
+                    type:
+                      - string
+                      - 'null'
+                  dataValidTo:
+                    type:
+                      - string
+                      - 'null'
+                  lastModified:
+                    type:
+                      - string
+                      - 'null'
+                  dataValidFrom:
+                    type:
+                      - string
+                      - 'null'
+              plannedChangeAudit:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    status:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    lastModified:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+          '1029':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '1046':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  alternativeExportValue:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        alternativeExportValue:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '1051':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  alternativeExportValue:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        alternativeExportValue:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '1094':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  value:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+          '1153':
+            type:
+              - object
+              - 'null'
+            properties:
+              type:
+                type:
+                  - string
+                  - 'null'
+              data:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  guid:
+                    type:
+                      - string
+                      - 'null'
+                  value:
+                    type:
+                      - string
+                      - 'null'
+                  alternativeExportValue:
+                    type:
+                      - string
+                      - 'null'
+              name:
+                type:
+                  - string
+                  - 'null'
+              typeId:
+                type:
+                  - string
+                  - 'null'
+              visible:
+                type:
+                  - string
+                  - 'null'
+              auditChange:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    data:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        value:
+                          type:
+                            - string
+                            - 'null'
+                        alternativeExportValue:
+                          type:
+                            - string
+                            - 'null'
+                    timeline:
+                      type:
+                        - string
+                        - 'null'
+                    changedAt:
+                      type:
+                        - string
+                        - 'null'
+                    changedBy:
+                      type:
+                        - object
+                        - 'null'
+                      properties:
+                        guid:
+                          type:
+                            - string
+                            - 'null'
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                    dataValidTo:
+                      type:
+                        - string
+                        - 'null'
+                    dataValidFrom:
+                      type:
+                        - string
+                        - 'null'
+              lastModified:
+                type:
+                  - string
+                  - 'null'
+              dataValidFrom:
+                type:
+                  - string
+                  - 'null'
+              plannedChange:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  data:
+                    type:
+                      - object
+                      - 'null'
+                    properties:
+                      guid:
+                        type:
+                          - string
+                          - 'null'
+                      value:
+                        type:
+                          - string
+                          - 'null'
+                  status:
+                    type:
+                      - string
+                      - 'null'
+                  dataValidTo:
+                    type:
+                      - string
+                      - 'null'
+                  lastModified:
+                    type:
+                      - string
+                      - 'null'
+                  dataValidFrom:
+                    type:
+                      - string
+                      - 'null'
+      username:
+        type:
+          - string
+          - 'null'
+      createdOn:
+        type:
+          - string
+          - 'null'
+      employeeId:
+        type:
+          - string
+          - 'null'
+      lastModified:
+        type:
+          - string
+          - 'null'
+      hasPlannedChange:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true

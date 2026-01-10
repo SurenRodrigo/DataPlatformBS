@@ -1,0 +1,22 @@
+
+version: 3
+
+sources:
+  - name: raw_se_source
+    description: "Raw data from various NRC-Sweden systems"
+    schema: pyairbyte_cache_sweden
+    tables:
+      - name: next_erp_connector_workorder
+      - name: next_erp_connector_workorder_row
+      - name: next_erp_connector_booked_hours
+      - name: next_erp_connector_customer_invoices
+      - name: next_erp_connector_voucher_row
+      - name: next_erp_connector_projects
+      - name: next_erp_connector_account
+      - name: ktomap_table_1
+      - name: projmap_table_2
+      - name: anv_table_1
+      - name: maskiner_table_1
+      - name: maskiner_table_2
+      - name: projektmappning ny_table_1
+

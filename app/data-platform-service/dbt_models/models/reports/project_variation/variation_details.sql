@@ -1,0 +1,27 @@
+SELECT
+    company_name,
+    division_name,
+    department_name,
+    project_number,
+    project_identifier,
+    ext_variation_id,
+    name,
+    description,
+    variation_date,
+    year,
+    month_number,
+    created_month_name,
+    deadline,
+    date_closed,
+    variation_type_name,
+    employee_id,
+    status,
+    sender,
+    receiver,
+    created_by,
+    total_amount,
+    accepted_amount,
+    declined_amount,
+    not_handled_amount
+FROM {{ ref('fct_nrc_project_variations') }}
+

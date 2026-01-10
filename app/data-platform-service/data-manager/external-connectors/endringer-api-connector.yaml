@@ -1,0 +1,282 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - project
+
+definitions:
+  streams:
+    project:
+      type: DeclarativeStream
+      name: project
+      primary_key:
+        - Id
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: projects
+          http_method: GET
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - projects
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/project'
+    case:
+      type: DeclarativeStream
+      name: case
+      primary_key:
+        - Id
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: projects/{{ stream_partition.project }}/cases
+          http_method: GET
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - cases
+        partition_router:
+          - type: SubstreamPartitionRouter
+            parent_stream_configs:
+              - type: ParentStreamConfig
+                parent_key: Id
+                partition_field: project
+                stream:
+                  $ref: '#/definitions/streams/project'
+      transformations:
+        - type: AddFields
+          fields:
+            - path:
+                - ProjectId
+              value: '{{ stream_partition.project }}'
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/case'
+    amount:
+      type: DeclarativeStream
+      name: amount
+      primary_key:
+        - ProjectId
+        - Month
+        - Year
+        - CaseType
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: projects/{{ stream_partition.project }}/amounts
+          http_method: GET
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: SubstreamPartitionRouter
+            parent_stream_configs:
+              - type: ParentStreamConfig
+                parent_key: Id
+                partition_field: project
+                stream:
+                  $ref: '#/definitions/streams/project'
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/amount'
+  base_requester:
+    type: HttpRequester
+    url_base: https://public-api.endre.app/v1
+    authenticator:
+      type: SessionTokenAuthenticator
+      login_requester:
+        type: HttpRequester
+        url_base: https://public-api.endre.app
+        path: token
+        authenticator:
+          type: NoAuth
+        http_method: POST
+        request_parameters: {}
+        request_headers: {}
+        request_body_data:
+          password: '{{ config[''password''] }}'
+          username: '{{ config[''username''] }}'
+          grant_type: password
+      session_token_path:
+        - access_token
+      request_authentication:
+        type: Bearer
+
+streams:
+  - $ref: '#/definitions/streams/project'
+  - $ref: '#/definitions/streams/case'
+  - $ref: '#/definitions/streams/amount'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - username
+      - password
+    properties:
+      password:
+        type: string
+        order: 1
+        title: Password
+        always_show: true
+        airbyte_secret: true
+      username:
+        type: string
+        order: 0
+        title: Username
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    project: false
+    case: true
+    amount: true
+
+schemas:
+  project:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      Id:
+        type: string
+      Name:
+        type:
+          - string
+          - 'null'
+      ProjectNumber:
+        type:
+          - string
+          - 'null'
+      OrganizationId:
+        type:
+          - string
+          - 'null'
+      IsFinished:
+        type:
+          - boolean
+          - 'null'
+    required:
+      - Id
+  case:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      AcceptedAmount:
+        type:
+          - number
+          - 'null'
+      CaseNumber:
+        type:
+          - string
+          - 'null'
+      CreatedBy:
+        type:
+          - string
+          - 'null'
+      CreatedDate:
+        type:
+          - string
+          - 'null'
+      DeclinedAmount:
+        type:
+          - number
+          - 'null'
+      DueDate:
+        type:
+          - string
+          - 'null'
+      Id:
+        type: string
+      ModifiedDate:
+        type:
+          - string
+          - 'null'
+      NotHandledAmount:
+        type:
+          - number
+          - 'null'
+      ProjectId:
+        type:
+          - string
+          - 'null'
+      Receiver:
+        type:
+          - string
+          - 'null'
+      Sender:
+        type:
+          - string
+          - 'null'
+      Status:
+        type:
+          - string
+          - 'null'
+      Title:
+        type:
+          - string
+          - 'null'
+      TotalAmount:
+        type:
+          - number
+          - 'null'
+      Type:
+        type:
+          - string
+          - 'null'
+    required:
+      - Id
+  amount:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      CaseType:
+        type: string
+      Month:
+        type: number
+      ProjectId:
+        type: string
+      TotalAcceptedAmount:
+        type:
+          - number
+          - 'null'
+      TotalAmount:
+        type:
+          - number
+          - 'null'
+      TotalDeclinedAmount:
+        type:
+          - number
+          - 'null'
+      TotalNotHandledAmount:
+        type:
+          - number
+          - 'null'
+      Year:
+        type: number
+    required:
+      - ProjectId
+      - Month
+      - Year
+      - CaseType
+    additionalProperties: true

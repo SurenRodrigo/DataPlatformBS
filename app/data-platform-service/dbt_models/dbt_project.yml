@@ -1,0 +1,46 @@
+name: 'dbt_test'
+version: '1.0.0'
+config-version: 2
+
+profile: 'dbt_test'
+
+model-paths: ["models"]
+snapshot-paths: ["snapshots"]
+seed-paths: ["seeds"]
+
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "logs"
+
+models:
+  dbt_test:
+    staging:
+      +materialized: table
+      +schema: staging
+
+    core_transformations:
+      +materialized: table
+      +tags: public
+      
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+
+    marts:
+      +materialized: table
+      +schema: marts
+
+    reports:
+      +materialized: table
+      +schema: reporting
+
+snapshots:
+  dbt_test:
+    +target_schema: snapshots
+
+seeds:
+      +schema: seeds
+
+vars:
+  ditio_env_url: 'https://core-api.ditio.app'
+  surrogate_key_treat_nulls_as_empty_strings: true

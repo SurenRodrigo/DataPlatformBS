@@ -1,0 +1,63 @@
+id,tenant_id,external_id,organizational_unit_guid,organizational_unit_name,is_active,legal_entity_id
+1,1,23,5d9c1ace-b8e6-41e9-a9a8-3f10c8f45508,"Bane, Spor",TRUE,2
+2,1,6,27c195eb-9733-44fe-8f41-f6532ff5dd25,"Bane, Signal",TRUE,2
+3,1,5,2c0e46b0-ad19-479e-b18f-6c415bc3d84c,"Bane, Pakkmaskin",TRUE,2
+4,1,7,4b4fdc4f-bca3-4ab4-896e-8be1f4d4364d,"Bane, Maskin (skinne/vei)",TRUE,2
+5,1,8,fcf890a8-5eae-456e-b522-5e3df1bfc672,"Bane, KL",TRUE,2
+6,1,22,e737f2f2-a396-410f-8b57-35857ae584d3,"Bane, Ingeniør",TRUE,2
+7,1,29,e38e3295-ab78-4c03-a740-661d7bc5d998,"Bane, HSV",TRUE,2
+8,1,10,bc65f60e-bc27-4fe9-8e4c-50ce5d905681,"Bane, Grunn",TRUE,2
+9,1,42,3524948f-7ba6-4f73-9fbf-9a316b484b61,"Bane, Fundamentboring",TRUE,2
+10,1,9,c3336028-eccb-4de5-b5b5-10659e17f745,"Bane, Elektro",TRUE,2
+11,1,3,ca8ecd0f-26de-403e-a815-7b9468861491,"Bane, Administrasjon",TRUE,2
+12,1,12,b6d850aa-9e35-4e5c-8174-47c65d5ed624,"Anlegg, avd. Sør",TRUE,3
+13,1,15,c165f92f-0701-4e92-9cb3-9569ee29f3e1,"Anlegg, avd. Midt/Nord",TRUE,3
+14,1,14,acbfc088-5d09-4ab1-a959-5093261e4ede,"Anlegg, avd. Infrastruktur",TRUE,3
+15,1,13,96901208-e67c-4927-983e-b6386f4e1b91,"Anlegg, avd. Havn/Dam",TRUE,3
+16,1,4,32859943-451e-4672-87c6-561300850207,"Anlegg, Administrasjon",TRUE,3
+17,1,50,64a72ec0-1c71-43b3-94b5-617c19d78058,Maskin SE & NO,TRUE,1
+18,1,52,68abf557-0d71-4ca0-9623-28199155043e,"Maskin, Fundamentboring",TRUE,1
+19,1,53,9475f3ee-f5d4-4f84-b668-7e34b8d68aa4,"Maskin, Skinne/vei",TRUE,1
+20,1,54,d660d0f9-cd2d-4744-93c9-39c1267f1dd5,"Maskin, Lager og bil",TRUE,1
+21,1,2,fa1af352-ec59-482a-b969-d59a6d08402d,NRC Norge AS,TRUE,4
+22,1,32,c71691cc-df52-41e5-a25f-d47a53b07b6c,Økonomi,TRUE,4
+23,1,35,1b844c3f-6c7b-4659-878d-28cbca5cceb4,Risikostyring og forbedring,TRUE,4
+24,1,34,09a49265-27c7-43d7-a59d-9912fcdddf9b,Bærekraft,TRUE,4
+25,1,33,cf7801d4-88d1-4525-abe7-d83236be8af3,Juridisk,TRUE,4
+26,1,30,9e072ed0-1c09-4edc-97bb-9c909ce79173,HR,TRUE,4
+27,1,31,7e11bc7e-fd86-42a7-a4dc-655e9c9e3baa,Kommunikasjon,TRUE,4
+28,1,51,b36f9a1c-ffba-4ed2-9c57-b613d30513a6,Innkjøp,TRUE,4
+29,1,36,feee0fd3-7e81-4485-b221-04a024fe9a5c,Regnskap,TRUE,4
+30,1,37,157ccd3c-60a0-4b01-95ff-ba0b8ad55e7e,IT,TRUE,4
+31,1,28,11e8a29e-71b5-4dcb-b55c-68a0db4f3fb2,"Kept, administrasjon",TRUE,5
+32,1,27,0cd32276-e525-4c0e-84d3-faf4b55c324a,"Kept, Øst",TRUE,5
+33,1,26,bb735b98-56c6-4ead-97a2-4e20ae0bbccb,"Kept, Sør",TRUE,5
+34,1,25,8511bba2-c4f1-4ca6-ac86-e8a406e2a69a,"Kept, Vest",TRUE,5
+35,2,365,,Autoimported,TRUE,6
+36,2,95,,GK Massetransport,TRUE,6
+37,2,721,,Verksted,TRUE,6
+38,2,725,,Ekstern tilgang,TRUE,6
+39,2,722,,Administrasjon,TRUE,6
+40,2,724,,TransportÃ¸r,TRUE,6
+41,2,56,,GK Krok og Kran,TRUE,6
+42,1,19,,NRC KEPT AS,TRUE,5
+43,1,55,9ef582e9-7917-4e51-9896-4a3d66979e53,Maskin,TRUE,1
+44,1,38,a026a4cb-bdb2-4683-a70b-04786e1eb2cc,Bane,TRUE,2
+45,1,39,64133372-497a-4ca5-bad0-df531da0e8e3,Anlegg,TRUE,3
+46,1,20,,Gunnar Knutsen AS,TRUE,6
+48,1,,,Hilde Knutsen,TRUE,3
+49,1,,,Christian Skodde,TRUE,3
+50,1,,,Stig Lien,TRUE,3
+51,1,,,Geir Nordbø,TRUE,3
+52,1,,,Fag,TRUE,2
+53,1,,,Funksjonær,TRUE,2
+54,1,,,Prosjekter,TRUE,2
+55,1,,,Prosjekter uten produksjon i 2018,TRUE,2
+56,1,,,Geir Nordbø,TRUE,2
+57,1,,,Ingeniøravdeling,TRUE,2
+58,1,,,EL,TRUE,2
+59,1,,,Maskin/Biler,TRUE,2
+60,1,,,Gamle Prosjekter,TRUE,2
+61,1,,,NRC Maskin,TRUE,2
+62,1,,,Anlegg - Eide-Fredriksen,TRUE,3
+63,1,,,Pakkmaskin,TRUE,2

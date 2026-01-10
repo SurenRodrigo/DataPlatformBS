@@ -1,0 +1,15 @@
+dbt_test:
+  target: dataplatform
+  outputs:
+    dataplatform:
+      type: postgres
+      host: "{{ env_var('APPBASE_DB_HOST') }}"
+      user: "{{ env_var('APPBASE_DB_USER') }}"
+      password: "{{ env_var('APPBASE_DB_PASSWORD') }}"
+      port: "{{ env_var('APPBASE_DB_PORT') | int }}"
+      dbname: "{{ env_var('APPBASE_DB_NAME') }}"
+      schema: public
+      threads: 1
+      keepalives_idle: 0
+      sslmode: prefer
+      connect_timeout: 10 

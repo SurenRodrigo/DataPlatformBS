@@ -1,0 +1,768 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - Vehicles
+
+definitions:
+  streams:
+    Vehicles:
+      type: DeclarativeStream
+      name: Vehicles
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: vehicles
+          http_method: GET
+          request_headers:
+            Accept: application/vnd.fmsstandard.com.vehicles.v2.1+json
+            Content-Type: application/vnd.fmsstandard.com.vehicles.v2.1+json
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - Vehicle
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/Vehicles'
+    Vehicle_Status:
+      type: DeclarativeStream
+      name: Vehicle_Status
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: vehiclestatuses
+          http_method: GET
+          request_headers:
+            Accept: application/vnd.fmsstandard.com.Vehiclestatuses.v2.1+json
+            Content-Type: application/vnd.fmsstandard.com.Vehiclestatuses.v2.1+json
+          request_parameters:
+            latestOnly: 'true'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - VehicleStatus
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/Vehicle_Status'
+    Vehicle_Position:
+      type: DeclarativeStream
+      name: Vehicle_Position
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: vehiclepositions
+          http_method: GET
+          request_headers:
+            Accept: application/vnd.fmsstandard.com.Vehiclepositions.v2.1+json
+            Content-Type: application/vnd.fmsstandard.com.Vehiclepositions.v2.1+json
+          request_parameters:
+            latestOnly: 'true'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - VehiclePosition
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/Vehicle_Position'
+  base_requester:
+    type: HttpRequester
+    url_base: https://api.volvotrucks.com/rfms/
+    authenticator:
+      type: BasicHttpAuthenticator
+      password: '{{ config[''password''] }}'
+      username: '{{ config[''username''] }}'
+
+streams:
+  - $ref: '#/definitions/streams/Vehicles'
+  - $ref: '#/definitions/streams/Vehicle_Status'
+  - $ref: '#/definitions/streams/Vehicle_Position'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - username
+    properties:
+      password:
+        type: string
+        order: 1
+        title: Password
+        always_show: true
+        airbyte_secret: true
+      username:
+        type: string
+        order: 0
+        title: Username
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    Vehicles: true
+    Vehicle_Status: true
+    Vehicle_Position: true
+
+schemas:
+  Vehicles:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      VIN:
+        type:
+          - string
+          - 'null'
+      Type:
+        type:
+          - string
+          - 'null'
+      Brand:
+        type:
+          - string
+          - 'null'
+      Model:
+        type:
+          - string
+          - 'null'
+      EmissionLevel:
+        type:
+          - string
+          - 'null'
+      ProductionDate:
+        type:
+          - object
+          - 'null'
+        properties:
+          Day:
+            type:
+              - number
+              - 'null'
+          Year:
+            type:
+              - number
+              - 'null'
+          Month:
+            type:
+              - number
+              - 'null'
+      CustomerVehicleName:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  Vehicle_Status:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      Vin:
+        type:
+          - string
+          - 'null'
+      Driver1Id:
+        type:
+          - object
+          - 'null'
+        properties:
+          OemDriverIdentification:
+            type:
+              - object
+              - 'null'
+            properties:
+              OemDriverIdentification:
+                type:
+                  - string
+                  - 'null'
+          TachoDriverIdentification:
+            type:
+              - object
+              - 'null'
+            properties:
+              CardRenewalIndex:
+                type:
+                  - string
+                  - 'null'
+              CardReplacementIndex:
+                type:
+                  - string
+                  - 'null'
+              DriverIdentification:
+                type:
+                  - string
+                  - 'null'
+              CardIssuingMemberState:
+                type:
+                  - string
+                  - 'null'
+              DriverAuthenticationEquipment:
+                type:
+                  - string
+                  - 'null'
+      TriggerType:
+        type:
+          - object
+          - 'null'
+        properties:
+          Context:
+            type:
+              - string
+              - 'null'
+          DriverId:
+            type:
+              - object
+              - 'null'
+            properties:
+              OemDriverIdentification:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  OemDriverIdentification:
+                    type:
+                      - string
+                      - 'null'
+              TachoDriverIdentification:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  CardRenewalIndex:
+                    type:
+                      - string
+                      - 'null'
+                  CardReplacementIndex:
+                    type:
+                      - string
+                      - 'null'
+                  DriverIdentification:
+                    type:
+                      - string
+                      - 'null'
+                  CardIssuingMemberState:
+                    type:
+                      - string
+                      - 'null'
+                  DriverAuthenticationEquipment:
+                    type:
+                      - string
+                      - 'null'
+          TriggerInfo:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - string
+                - 'null'
+          TriggerType:
+            type:
+              - string
+              - 'null'
+      SnapshotData:
+        type:
+          - object
+          - 'null'
+        properties:
+          Driver2Id:
+            type:
+              - object
+              - 'null'
+            properties:
+              OemDriverIdentification:
+                type:
+                  - object
+                  - 'null'
+          FuelLevel1:
+            type:
+              - number
+              - 'null'
+          EngineSpeed:
+            type:
+              - number
+              - 'null'
+          GNSSPosition:
+            type:
+              - object
+              - 'null'
+            properties:
+              Speed:
+                type:
+                  - number
+                  - 'null'
+              Heading:
+                type:
+                  - number
+                  - 'null'
+              Altitude:
+                type:
+                  - number
+                  - 'null'
+              Latitude:
+                type:
+                  - number
+                  - 'null'
+              Longitude:
+                type:
+                  - number
+                  - 'null'
+              PositionDateTime:
+                type:
+                  - string
+                  - 'null'
+          TachographSpeed:
+            type:
+              - number
+              - 'null'
+          WheelBasedSpeed:
+            type:
+              - number
+              - 'null'
+          CatalystFuelLevel:
+            type:
+              - number
+              - 'null'
+          Driver1WorkingState:
+            type:
+              - string
+              - 'null'
+          Driver2WorkingState:
+            type:
+              - string
+              - 'null'
+          AmbientAirTemperature:
+            type:
+              - number
+              - 'null'
+      AccumulatedData:
+        type:
+          - object
+          - 'null'
+        properties:
+          PtoActiveClass:
+            type:
+              - object
+              - 'null'
+            properties:
+              Value:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    Label:
+                      type:
+                        - string
+                        - 'null'
+                    Meters:
+                      type:
+                        - number
+                        - 'null'
+                    Seconds:
+                      type:
+                        - number
+                        - 'null'
+                    MilliLitres:
+                      type:
+                        - number
+                        - 'null'
+          EngineSpeedClass:
+            type:
+              - object
+              - 'null'
+            properties:
+              Value:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    To:
+                      type:
+                        - number
+                        - 'null'
+                    From:
+                      type:
+                        - number
+                        - 'null'
+                    Meters:
+                      type:
+                        - number
+                        - 'null'
+                    Seconds:
+                      type:
+                        - number
+                        - 'null'
+                    MilliLitres:
+                      type:
+                        - number
+                        - 'null'
+          AccelerationClass:
+            type:
+              - object
+              - 'null'
+            properties:
+              Value:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    To:
+                      type:
+                        - number
+                        - 'null'
+                    From:
+                      type:
+                        - number
+                        - 'null'
+                    Meters:
+                      type:
+                        - number
+                        - 'null'
+                    Seconds:
+                      type:
+                        - number
+                        - 'null'
+                    MilliLitres:
+                      type:
+                        - number
+                        - 'null'
+          EngineTorqueClass:
+            type:
+              - object
+              - 'null'
+            properties:
+              Value:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    To:
+                      type:
+                        - number
+                        - 'null'
+                    From:
+                      type:
+                        - number
+                        - 'null'
+                    Meters:
+                      type:
+                        - number
+                        - 'null'
+                    Seconds:
+                      type:
+                        - number
+                        - 'null'
+                    MilliLitres:
+                      type:
+                        - number
+                        - 'null'
+          VehicleSpeedClass:
+            type:
+              - object
+              - 'null'
+            properties:
+              Value:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    To:
+                      type:
+                        - number
+                        - 'null'
+                    From:
+                      type:
+                        - number
+                        - 'null'
+                    Meters:
+                      type:
+                        - number
+                        - 'null'
+                    Seconds:
+                      type:
+                        - number
+                        - 'null'
+                    MilliLitres:
+                      type:
+                        - number
+                        - 'null'
+          RetarderTorqueClass:
+            type:
+              - object
+              - 'null'
+            properties:
+              Value:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    To:
+                      type:
+                        - number
+                        - 'null'
+                    From:
+                      type:
+                        - number
+                        - 'null'
+                    Meters:
+                      type:
+                        - number
+                        - 'null'
+                    Seconds:
+                      type:
+                        - number
+                        - 'null'
+                    MilliLitres:
+                      type:
+                        - number
+                        - 'null'
+          FuelWheelbaseSpeedZero:
+            type:
+              - number
+              - 'null'
+          DrivingWithoutTorqueClass:
+            type:
+              - object
+              - 'null'
+            properties:
+              Value:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    Meters:
+                      type:
+                        - number
+                        - 'null'
+                    Seconds:
+                      type:
+                        - number
+                        - 'null'
+          DurationWheelbaseSpeedZero:
+            type:
+              - number
+              - 'null'
+          FuelWheelbaseSpeedOverZero:
+            type:
+              - number
+              - 'null'
+          DistanceCruiseControlActive:
+            type:
+              - number
+              - 'null'
+          DurationCruiseControlActive:
+            type:
+              - number
+              - 'null'
+          AccelerationPedalPositionClass:
+            type:
+              - object
+              - 'null'
+            properties:
+              Value:
+                type:
+                  - array
+                  - 'null'
+                items:
+                  type:
+                    - object
+                    - 'null'
+                  properties:
+                    To:
+                      type:
+                        - number
+                        - 'null'
+                    From:
+                      type:
+                        - number
+                        - 'null'
+                    Meters:
+                      type:
+                        - number
+                        - 'null'
+                    Seconds:
+                      type:
+                        - number
+                        - 'null'
+                    MilliLitres:
+                      type:
+                        - number
+                        - 'null'
+          BrakePedalCounterSpeedOverZero:
+            type:
+              - number
+              - 'null'
+          DurationWheelbaseSpeedOverZero:
+            type:
+              - number
+              - 'null'
+          FuelConsumptionCruiseControlActive:
+            type:
+              - number
+              - 'null'
+          DistanceBrakePedalActiveSpeedOverZero:
+            type:
+              - number
+              - 'null'
+      CreatedDateTime:
+        type:
+          - string
+          - 'null'
+      ReceivedDateTime:
+        type:
+          - string
+          - 'null'
+      TotalEngineHours:
+        type:
+          - number
+          - 'null'
+      EngineTotalFuelUsed:
+        type:
+          - number
+          - 'null'
+      HRTotalVehicleDistance:
+        type:
+          - number
+          - 'null'
+      GrossCombinationVehicleWeight:
+        type:
+          - number
+          - 'null'
+    additionalProperties: true
+  Vehicle_Position:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      VIN:
+        type:
+          - string
+          - 'null'
+      TriggerType:
+        type:
+          - object
+          - 'null'
+        properties:
+          Context:
+            type:
+              - string
+              - 'null'
+          DriverId:
+            type:
+              - object
+              - 'null'
+            properties:
+              TachoDriverIdentification:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  CardRenewalIndex:
+                    type:
+                      - string
+                      - 'null'
+                  CardReplacementIndex:
+                    type:
+                      - string
+                      - 'null'
+                  DriverIdentification:
+                    type:
+                      - string
+                      - 'null'
+                  CardIssuingMemberState:
+                    type:
+                      - string
+                      - 'null'
+                  DriverAuthenticationEquipment:
+                    type:
+                      - string
+                      - 'null'
+          TriggerType:
+            type:
+              - string
+              - 'null'
+      GNSSPosition:
+        type:
+          - object
+          - 'null'
+        properties:
+          Speed:
+            type:
+              - number
+              - 'null'
+          Heading:
+            type:
+              - number
+              - 'null'
+          Altitude:
+            type:
+              - number
+              - 'null'
+          Latitude:
+            type:
+              - number
+              - 'null'
+          Longitude:
+            type:
+              - number
+              - 'null'
+          PositionDateTime:
+            type:
+              - string
+              - 'null'
+      CreatedDateTime:
+        type:
+          - string
+          - 'null'
+      TachographSpeed:
+        type:
+          - number
+          - 'null'
+      WheelBasedSpeed:
+        type:
+          - number
+          - 'null'
+      ReceivedDateTime:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true

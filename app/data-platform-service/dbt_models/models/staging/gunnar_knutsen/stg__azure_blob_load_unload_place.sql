@@ -1,0 +1,26 @@
+SELECT
+    "Id"                    AS id,
+    "Name"                  AS name,
+    "Description"           AS description,
+    "Load"                  AS load,
+    "UnLoad"                AS unload,
+    "Receipt"               AS receipt,
+    "ReceiptInfo"           AS receipt_info,
+    "ClientId"              AS client_id,
+    "CreatedOn"             AS created_on,
+    "CreatedBy"             AS created_by,
+    "ModifiedOn"            AS modified_on,
+    "ModifiedBy"            AS modified_by,
+    "IsDeleted"             AS is_deleted,
+    "IsInActive"            AS is_in_active,
+    "ExternalId"            AS external_id,
+    "ExternalSystemName"    AS external_system_name,
+    "ExternalOwnerId"       AS external_owner_id,
+    "CustomerId"            AS customer_id,
+    "IgnoreProjectFilter"   AS ignore_project_filter,
+    dbt_scd_id,
+    dbt_updated_at,
+    dbt_valid_from,
+    dbt_valid_to
+FROM {{ ref('gk_azure_blob_load_unload_place_snapshot') }}
+WHERE dbt_valid_to IS NULL

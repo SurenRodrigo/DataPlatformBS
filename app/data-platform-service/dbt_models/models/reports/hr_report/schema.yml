@@ -1,0 +1,15 @@
+version: 3
+sources:
+  - name: public
+    schema: public
+    tables:
+      - name: company
+      - name: department
+      - name: employee
+      - name: employee_group
+      - name: employee_job_role
+      - name: division
+      - name: time_record
+      - name: time_status
+      - name: time_type
+

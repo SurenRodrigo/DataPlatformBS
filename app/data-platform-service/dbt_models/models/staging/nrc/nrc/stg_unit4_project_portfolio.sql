@@ -1,0 +1,42 @@
+SELECT
+    accest                   AS acc_estimate,
+    accinv                   AS acc_cost,
+    NULLIF(client, '')::INT  AS ext_company_id,
+    invkap                   AS invested_capital,
+    (period::INT)::TEXT      AS period,
+    NULLIF(protyp, '')       AS project_type_code,
+    NULLIF(status, '')       AS status,
+    ytdest                   AS ytd_estimate,
+    accebit                  AS acc_ebit,
+    accinnt                  AS acc_income,
+    orcurry                  AS or_currency,
+    NULLIF(project, '')      AS project_full_name,
+    yearinv                  AS year_investment,
+    ytdebit                  AS ytd_ebit,
+    ytdinnt                  AS ytd_income,
+    NULLIF(divisjon, '')     AS ext_division_id,
+    orcurry1                 AS or_currency1,
+    orcurry2                 AS or_currency2,
+    accbidrag                AS acc_contribution,
+    periodinv                AS period_investment,
+    NULLIF(projectno, '')::INT    AS project_number,
+    ytdbidrag                AS ytd_contribution,
+    orcurryres               AS or_currency_res,
+    orderstock               AS order_stock,
+    periodebit               AS period_ebit,
+    periodinnt               AS period_income,
+    NULLIF(protyptext, '')   AS project_type_text,
+    orcurryres1              AS or_currency_res1,
+    orcurryres2              AS or_currency_res2,
+    accestbidrag             AS acc_estimate_margin,
+    periodbidrag             AS period_contribution,
+    ytdestbidrag             AS ytd_estimate_margin,
+    dbt_scd_id,
+    dbt_updated_at,
+    dbt_valid_from,
+    dbt_valid_to
+FROM
+    {{ ref('unit4_project_portfolio_snapshot') }}
+WHERE
+    dbt_valid_to IS NULL
+    AND projectno NOT LIKE '%Q%'

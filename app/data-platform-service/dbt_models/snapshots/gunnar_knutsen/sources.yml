@@ -1,0 +1,58 @@
+version: 3
+sources:
+  - name: raw_nrc_source
+    description: "Raw data from GK source systems"
+    schema: pyairbyte_cache
+    tables:
+      - name: source_admmit_Vehicle
+        identifier: source_admmit_vehicle
+      - name: source_admmit_Employee
+        identifier: source_admmit_employee
+      - name: source_admmit_WorkOrder
+        identifier: source_admmit_workorder
+      - name: source_admmit_Project
+        identifier: source_admmit_project
+      - name: source_admmit_WorkOrderItem
+        identifier: source_admmit_workorderitem
+      - name: source_admmit_HoursLegacy
+        identifier: source_admmit_hourslegacy
+      - name: source_sharepoint_gk_manual_data
+        identifier: source_sharepoint_gk_manual_data
+      - name: source_sharepoint_gk_potential_project_manual_data
+        identifier: source_sharepoint_gk_potential_project_manual_data
+      - name: source_admmit_LoadUnLoadPlace
+        identifier: source_admmit_loadunloadplace
+      - name: source_admmit_OrderItemVehicleType
+        identifier: source_admmit_orderitemvehicletype
+      - name: source_sharepoint_gk_compello_data
+        identifier: source_sharepoint_gk_compello_data
+      - name: source_scania_vehicles
+        identifier: scania_connector_vehicles
+      - name: source_scania_vehicle_statuses
+        identifier: scania_connector_vehiclestatuses
+      - name: source_scania_vehicle_positions
+        identifier: scania_connector_vehiclepositions
+      - name: source_volvo_vehicle_positions
+        identifier: volvo_connector_vehicle_position
+      - name: source_volvo_vehicles
+        identifier: volvo_connector_vehicles
+      - name: source_volvo_vehicle_statuses
+        identifier: volvo_connector_vehicle_status
+      - name: source_azure_blob_item_vehicle_types
+        identifier: source_azure_blob_item_vehicle_types
+      - name: source_azure_blob_items
+        identifier: source_azure_blob_items
+      - name: source_azure_blob_projects
+        identifier: source_azure_blob_projects
+      - name: source_azure_blob_work_order_items
+        identifier: source_azure_blob_work_order_items
+      - name: source_azure_blob_work_orders
+        identifier: source_azure_blob_work_orders
+      - name: source_azure_blob_vehicles
+        identifier: source_azure_blob_vehicles
+      - name: source_azure_blob_load_un_load_place
+        identifier: source_azure_blob_load_un_load_place
+      - name: source_azure_blob_units
+        identifier: source_azure_blob_units
+      - name: source_azure_blob_customers
+        identifier: source_azure_blob_customers

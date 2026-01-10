@@ -1,0 +1,1111 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - hours
+
+definitions:
+  streams:
+    hours:
+      type: DeclarativeStream
+      name: hours
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: Data/HRS500_HOURS_V1
+          http_method: GET
+          request_parameters:
+            clientid: '{{ config[''clientid''] }}'
+            toAlteredTs: '{{ config[''toAlteredTs''] }}'
+            fromAlteredTs: '{{ config[''fromAlteredTs''] }}'
+          request_headers:
+            X-Api-Key: '{{ config[''x_api_key''] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/hours'
+    hours_type:
+      type: DeclarativeStream
+      name: hours_type
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: Data/HRS100_HOURS_TYPE_V1
+          http_method: GET
+          request_parameters:
+            clientid: '{{ config[''clientid''] }}'
+          request_headers:
+            X-Api-Key: '{{ config[''x_api_key''] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/hours_type'
+    hours_status:
+      type: DeclarativeStream
+      name: hours_status
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: Data/MAS010_HOURS_STATUS_V1
+          http_method: GET
+          request_parameters:
+            clientid: '{{ config[''clientid''] }}'
+          request_headers:
+            X-Api-Key: '{{ config[''x_api_key''] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/hours_status'
+    company:
+      type: DeclarativeStream
+      name: company
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: Data/MAS100_COMPANY_V1
+          http_method: GET
+          request_parameters:
+            clientid: '{{ config[''clientid''] }}'
+          request_headers:
+            X-Api-Key: '{{ config[''x_api_key''] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/company'
+    employee_periodic_current:
+      type: DeclarativeStream
+      name: employee_periodic_current
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: Data/MAS121_EMPLOYEE_PERIODIC_CURRENT_V1
+          http_method: GET
+          request_parameters:
+            clientid: '{{ config[''clientid''] }}'
+          request_headers:
+            X-Api-Key: '{{ config[''x_api_key''] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/employee_periodic_current'
+    employee_periodic:
+      type: DeclarativeStream
+      name: employee_periodic
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: Data/MAS121_EMPLOYEE_PERIODIC_V1
+          http_method: GET
+          request_parameters:
+            clientid: '{{ config[''clientid''] }}'
+          request_headers:
+            X-Api-Key: '{{ config[''x_api_key''] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/employee_periodic'
+    employee:
+      type: DeclarativeStream
+      name: employee
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: Data/MAS120_EMPLOYEE_V1
+          http_method: GET
+          request_parameters:
+            clientid: '{{ config[''clientid''] }}'
+          request_headers:
+            X-Api-Key: '{{ config[''x_api_key''] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/employee'
+  base_requester:
+    type: HttpRequester
+    url_base: https://nrcgroupbip.icore.no/api
+
+streams:
+  - $ref: '#/definitions/streams/hours'
+  - $ref: '#/definitions/streams/hours_type'
+  - $ref: '#/definitions/streams/hours_status'
+  - $ref: '#/definitions/streams/company'
+  - $ref: '#/definitions/streams/employee_periodic_current'
+  - $ref: '#/definitions/streams/employee_periodic'
+  - $ref: '#/definitions/streams/employee'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - x_api_key
+      - clientid
+      - fromAlteredTs
+      - toAlteredTs
+    properties:
+      x_api_key:
+        type: string
+        order: 0
+        title: X-Api-Key
+        default: IrTO8o4f-k8wJZXInyR9VOiYHOdb7VBPdnYgMxJfjpY
+      clientid:
+        type: string
+        order: 1
+        title: clientId
+        default: NRC_GROUP
+      fromAlteredTs:
+        type: string
+        order: 2
+        title: From Altered TS
+        format: date
+        pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}$
+      toAlteredTs:
+        type: string
+        order: 3
+        title: To Altered TS
+        format: date-time
+        pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    hours: true
+    hours_type: true
+    hours_status: true
+    shift: true
+    company: true
+    employee_periodic_current: true
+    employee_periodic: true
+    employee: true
+
+schemas:
+  hours:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      _companyKey:
+        type:
+          - string
+          - 'null'
+      _costUnitKey:
+        type:
+          - string
+          - 'null'
+      _employeeKey:
+        type:
+          - string
+          - 'null'
+      _employeePeriodicKey:
+        type:
+          - string
+          - 'null'
+      _hoursTypeKey:
+        type:
+          - string
+          - 'null'
+      _recordTypeKey:
+        type:
+          - string
+          - 'null'
+      _rotationKey:
+        type:
+          - string
+          - 'null'
+      _shiftKey:
+        type:
+          - string
+          - 'null'
+      _statusKey:
+        type:
+          - string
+          - 'null'
+      _workLocationKey:
+        type:
+          - string
+          - 'null'
+      alteredTs:
+        type:
+          - string
+          - 'null'
+      clientId:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      correctedSw:
+        type:
+          - boolean
+          - 'null'
+      quantity:
+        type:
+          - number
+          - 'null'
+      recordId:
+        type:
+          - number
+          - 'null'
+      rotRefRecordId:
+        type:
+          - number
+          - 'null'
+      timeOfDay:
+        type:
+          - string
+          - 'null'
+      workDate:
+        type:
+          - string
+          - 'null'
+      workYear:
+        type:
+          - number
+          - 'null'
+  hours_type:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      _key:
+        type:
+          - string
+          - 'null'
+      alteredTs:
+        type:
+          - string
+          - 'null'
+      clientId:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      hoursTypeCode:
+        type:
+          - string
+          - 'null'
+      hoursTypeDescr:
+        type:
+          - string
+          - 'null'
+      hoursTypeDescrSL:
+        type:
+          - string
+          - 'null'
+      isOvertimeCalcSw:
+        type:
+          - boolean
+          - 'null'
+      isOvertimeCompSw:
+        type:
+          - boolean
+          - 'null'
+      isSickLeaveSw:
+        type:
+          - boolean
+          - 'null'
+      mainCategoryCode:
+        type:
+          - string
+          - 'null'
+      mainCategoryDescr:
+        type:
+          - string
+          - 'null'
+      mainCategoryDescrSL:
+        type:
+          - string
+          - 'null'
+      subCategoryCode:
+        type:
+          - string
+          - 'null'
+      subCategoryDescr:
+        type:
+          - string
+          - 'null'
+      subCategoryDescrSL:
+        type:
+          - string
+          - 'null'
+      validFromDate:
+        type:
+          - string
+          - 'null'
+      validToDate:
+        type:
+          - string
+          - 'null'
+  hours_status:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      _key:
+        type:
+          - string
+          - 'null'
+      activeSw:
+        type:
+          - boolean
+          - 'null'
+      alteredTs:
+        type:
+          - string
+          - 'null'
+      clientId:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      hoursStatusCode:
+        type:
+          - string
+          - 'null'
+      hoursStatusDescr:
+        type:
+          - string
+          - 'null'
+      hoursStatusDescrSL:
+        type:
+          - string
+          - 'null'
+  
+  company:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      data:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            _key:
+              type:
+                - string
+                - 'null'
+            alteredTs:
+              type:
+                - string
+                - 'null'
+            businessCountryCode:
+              type:
+                - string
+                - 'null'
+            businessRegisterNo:
+              type:
+                - string
+                - 'null'
+            clientId:
+              type:
+                - string
+                - 'null'
+            companyId:
+              type:
+                - string
+                - 'null'
+            companyName:
+              type:
+                - string
+                - 'null'
+            corporationCode:
+              type:
+                - string
+                - 'null'
+            divisionCode:
+              type:
+                - string
+                - 'null'
+            divisionDescr:
+              type:
+                - string
+                - 'null'
+      errors:
+        type:
+          - object
+          - 'null'
+      limitExceeded:
+        type:
+          - boolean
+          - 'null'
+      limitType:
+        type:
+          - string
+          - 'null'
+      message:
+        type:
+          - string
+          - 'null'
+  employee_periodic_current:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      _key:
+        type:
+          - string
+          - 'null'
+      addressCountryCode:
+        type:
+          - string
+          - 'null'
+      addressCountryName:
+        type:
+          - string
+          - 'null'
+      addressCountryNameSL:
+        type:
+          - string
+          - 'null'
+      addressZipCode:
+        type:
+          - string
+          - 'null'
+      alteredTs:
+        type:
+          - string
+          - 'null'
+      clientId:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      disciplineCode:
+        type:
+          - string
+          - 'null'
+      disciplineDescr:
+        type:
+          - string
+          - 'null'
+      disciplineDescrSL:
+        type:
+          - string
+          - 'null'
+      emplolyeeCategoryCode:
+        type:
+          - string
+          - 'null'
+      emplolyeeCategoryDescr:
+        type:
+          - string
+          - 'null'
+      emplolyeeCategoryDescrSL:
+        type:
+          - string
+          - 'null'
+      employeeId:
+        type:
+          - string
+          - 'null'
+      employmentCode:
+        type:
+          - string
+          - 'null'
+      employmentDescr:
+        type:
+          - string
+          - 'null'
+      employmentDescrSL:
+        type:
+          - string
+          - 'null'
+      employmentPercentage:
+        type:
+          - number
+          - 'null'
+      employmentTypeCode:
+        type:
+          - string
+          - 'null'
+      employmentTypeDescr:
+        type:
+          - string
+          - 'null'
+      employmentTypeDescrSL:
+        type:
+          - string
+          - 'null'
+      fullTimeHoursPrWeek:
+        type:
+          - number
+          - 'null'
+      laborUnionCode:
+        type:
+          - string
+          - 'null'
+      laborUnionDescr:
+        type:
+          - string
+          - 'null'
+      laborUnionDescrSL:
+        type:
+          - string
+          - 'null'
+      officeLocationCode:
+        type:
+          - string
+          - 'null'
+      officeLocationDescr:
+        type:
+          - string
+          - 'null'
+      officeLocationDescrSL:
+        type:
+          - string
+          - 'null'
+      organisationUnitDescr:
+        type:
+          - string
+          - 'null'
+      organisationUnitId:
+        type:
+          - string
+          - 'null'
+      overtimeEntitledSw:
+        type:
+          - boolean
+          - 'null'
+      positionTypeCode:
+        type:
+          - string
+          - 'null'
+      positionTypeDescr:
+        type:
+          - string
+          - 'null'
+      positionTypeDescrSL:
+        type:
+          - string
+          - 'null'
+      professionCode:
+        type:
+          - string
+          - 'null'
+      professionDescr:
+        type:
+          - string
+          - 'null'
+      professionDescrSL:
+        type:
+          - string
+          - 'null'
+      salaryCategoryCode:
+        type:
+          - string
+          - 'null'
+      salaryCategoryDescr:
+        type:
+          - string
+          - 'null'
+      salaryCategoryDescrSL:
+        type:
+          - string
+          - 'null'
+      salaryScheme:
+        type:
+          - string
+          - 'null'
+      salarySchemeDescr:
+        type:
+          - string
+          - 'null'
+      salarySchemeDescrSL:
+        type:
+          - string
+          - 'null'
+      salaryTypeCode:
+        type:
+          - string
+          - 'null'
+      salaryTypeDescr:
+        type:
+          - string
+          - 'null'
+      salaryTypeDescrSL:
+        type:
+          - string
+          - 'null'
+      serialNo:
+        type:
+          - number
+          - 'null'
+      statusCode:
+        type:
+          - string
+          - 'null'
+      statusDescr:
+        type:
+          - string
+          - 'null'
+      statusDescrSL:
+        type:
+          - string
+          - 'null'
+      supplierId:
+        type:
+          - string
+          - 'null'
+      supplierName:
+        type:
+          - string
+          - 'null'
+      tradeCode:
+        type:
+          - string
+          - 'null'
+      tradeDescr:
+        type:
+          - string
+          - 'null'
+      tradeDescrSL:
+        type:
+          - string
+          - 'null'
+      validFromDate:
+        type:
+          - string
+          - 'null'
+      validToDate:
+        type:
+          - string
+          - 'null'
+      workArrangementCode:
+        type:
+          - string
+          - 'null'
+      workArrangementDescr:
+        type:
+          - string
+          - 'null'
+      workArrangementDescrSL:
+        type:
+          - string
+          - 'null'
+  employee_periodic:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      _key:
+        type:
+          - string
+          - 'null'
+      addressCountryCode:
+        type:
+          - string
+          - 'null'
+      addressCountryName:
+        type:
+          - string
+          - 'null'
+      addressCountryNameSL:
+        type:
+          - string
+          - 'null'
+      addressZipCode:
+        type:
+          - string
+          - 'null'
+      alteredTs:
+        type:
+          - string
+          - 'null'
+      clientId:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      disciplineCode:
+        type:
+          - string
+          - 'null'
+      disciplineDescr:
+        type:
+          - string
+          - 'null'
+      disciplineDescrSL:
+        type:
+          - string
+          - 'null'
+      emplolyeeCategoryCode:
+        type:
+          - string
+          - 'null'
+      emplolyeeCategoryDescr:
+        type:
+          - string
+          - 'null'
+      emplolyeeCategoryDescrSL:
+        type:
+          - string
+          - 'null'
+      employeeId:
+        type:
+          - string
+          - 'null'
+      employmentCode:
+        type:
+          - string
+          - 'null'
+      employmentDescr:
+        type:
+          - string
+          - 'null'
+      employmentDescrSL:
+        type:
+          - string
+          - 'null'
+      employmentPercentage:
+        type:
+          - number
+          - 'null'
+      employmentTypeCode:
+        type:
+          - string
+          - 'null'
+      employmentTypeDescr:
+        type:
+          - string
+          - 'null'
+      employmentTypeDescrSL:
+        type:
+          - string
+          - 'null'
+      fullTimeHoursPrWeek:
+        type:
+          - number
+          - 'null'
+      laborUnionCode:
+        type:
+          - string
+          - 'null'
+      laborUnionDescr:
+        type:
+          - string
+          - 'null'
+      laborUnionDescrSL:
+        type:
+          - string
+          - 'null'
+      officeLocationCode:
+        type:
+          - string
+          - 'null'
+      officeLocationDescr:
+        type:
+          - string
+          - 'null'
+      officeLocationDescrSL:
+        type:
+          - string
+          - 'null'
+      organisationUnitDescr:
+        type:
+          - string
+          - 'null'
+      organisationUnitId:
+        type:
+          - string
+          - 'null'
+      overtimeEntitledSw:
+        type:
+          - boolean
+          - 'null'
+      positionTypeCode:
+        type:
+          - string
+          - 'null'
+      positionTypeDescr:
+        type:
+          - string
+          - 'null'
+      positionTypeDescrSL:
+        type:
+          - string
+          - 'null'
+      professionCode:
+        type:
+          - string
+          - 'null'
+      professionDescr:
+        type:
+          - string
+          - 'null'
+      professionDescrSL:
+        type:
+          - string
+          - 'null'
+      salaryCategoryCode:
+        type:
+          - string
+          - 'null'
+      salaryCategoryDescr:
+        type:
+          - string
+          - 'null'
+      salaryCategoryDescrSL:
+        type:
+          - string
+          - 'null'
+      salaryScheme:
+        type:
+          - string
+          - 'null'
+      salarySchemeDescr:
+        type:
+          - string
+          - 'null'
+      salarySchemeDescrSL:
+        type:
+          - string
+          - 'null'
+      salaryTypeCode:
+        type:
+          - string
+          - 'null'
+      salaryTypeDescr:
+        type:
+          - string
+          - 'null'
+      salaryTypeDescrSL:
+        type:
+          - string
+          - 'null'
+      serialNo:
+        type:
+          - number
+          - 'null'
+      statusCode:
+        type:
+          - string
+          - 'null'
+      statusDescr:
+        type:
+          - string
+          - 'null'
+      statusDescrSL:
+        type:
+          - string
+          - 'null'
+      tradeCode:
+        type:
+          - string
+          - 'null'
+      tradeDescr:
+        type:
+          - string
+          - 'null'
+      tradeDescrSL:
+        type:
+          - string
+          - 'null'
+      validFromDate:
+        type:
+          - string
+          - 'null'
+      validToDate:
+        type:
+          - string
+          - 'null'
+      workArrangementCode:
+        type:
+          - string
+          - 'null'
+      workArrangementDescr:
+        type:
+          - string
+          - 'null'
+      workArrangementDescrSL:
+        type:
+          - string
+          - 'null'
+  employee:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      _key:
+        type:
+          - string
+          - 'null'
+      alteredTs:
+        type:
+          - string
+          - 'null'
+      clientId:
+        type:
+          - string
+          - 'null'
+      companyCarSw:
+        type:
+          - boolean
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      dateOfBirth:
+        type:
+          - string
+          - 'null'
+      emailPrivate:
+        type:
+          - string
+          - 'null'
+      emailWork:
+        type:
+          - string
+          - 'null'
+      employeeId:
+        type:
+          - string
+          - 'null'
+      employeeType:
+        type:
+          - string
+          - 'null'
+      employeeTypeDescr:
+        type:
+          - string
+          - 'null'
+      employeeTypeDescrSL:
+        type:
+          - string
+          - 'null'
+      firstName:
+        type:
+          - string
+          - 'null'
+      gender:
+        type:
+          - string
+          - 'null'
+      genderDescr:
+        type:
+          - string
+          - 'null'
+      genderDescrSL:
+        type:
+          - string
+          - 'null'
+      maritalStatus:
+        type:
+          - string
+          - 'null'
+      maritalStatusDescr:
+        type:
+          - string
+          - 'null'
+      maritalStatusDescrSL:
+        type:
+          - string
+          - 'null'
+      nationality:
+        type:
+          - string
+          - 'null'
+      nationalityDescr:
+        type:
+          - string
+          - 'null'
+      nationalityDescrSL:
+        type:
+          - string
+          - 'null'
+      primaryAirportCode:
+        type:
+          - string
+          - 'null'
+      primaryAirportDescr:
+        type:
+          - string
+          - 'null'
+      primaryAirportDescrSL:
+        type:
+          - string
+          - 'null'
+      superiorEmployeeId:
+        type:
+          - string
+          - 'null'
+      surname:
+        type:
+          - string
+          - 'null'
+      workSeniorityDate:
+        type:
+          - string
+          - 'null'

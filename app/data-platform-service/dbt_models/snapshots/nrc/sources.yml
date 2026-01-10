@@ -1,0 +1,1084 @@
+
+version: 3
+
+sources:
+  - name: raw_nrc_source
+    description: "Raw data from various NRC systems"
+    schema: pyairbyte_cache
+    tables:
+      - name: source_sharepoint_hr_external_inputs
+      - name: source_sharepoint_hse_external_inputs
+      - name: source_hse_project_external_inputs
+
+      - name: source_tqm_case
+        identifier: "{{ 'test_tqm_api_connector_case' if var('use_test_connectors', false) else 'tqm_api_connector_case' }}"
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - "\"ID\""
+                - "\"CaseID\""
+        columns:
+          - name: "\"ID\""
+            tests:
+              - not_null
+          
+          - name: "\"CaseID\""
+            tests:
+              - not_null
+          
+          - name: "\"Status\""
+            tests:
+              - not_null
+          
+          - name: "\"CaseURL\""
+            tests:
+              - not_null
+          
+          - name: "\"CaseType\""
+            tests:
+              - not_null
+          
+          - name: "\"Deadline\""
+            tests:
+              - not_null
+          
+          - name: "\"Position\""
+            tests:
+              - not_null
+          
+          - name: "\"Originator\""
+            tests:
+              - not_null
+          
+          - name: "\"DateOccurred\""
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$'"
+          
+          - name: "\"DatePublished\""
+            tests:
+              - not_null
+          
+          - name: "\"OrganizationLevel3\""
+            tests:
+              - not_null
+      - name: source_unit4_project 
+        identifier: unit4_api_connector_project
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - "\"projectId\""
+                - "\"companyId\""
+
+        columns:
+          - name: "\"projectId\""
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+          
+          - name: "\"companyId\""
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - accepted_values:
+                  values: ['45', '70']
+          
+          - name: "\"projectName\""
+            tests:
+              - not_null
+          
+          - name: "\"projectType\""
+            tests:
+              - not_null
+          
+          - name: "\"lastUpdated\"" 
+            tests:
+              - not_null
+
+          - name: "\"mainProject\"" 
+            tests:
+              - not_null
+          
+          - name: "\"projectDuration\"" 
+            tests:
+              - not_null
+          
+          - name: "\"projectManagerId\"" 
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+        
+
+      - name: source_unit4_customer
+        identifier: unit4_api_connector_customer
+      - name: source_ditio_absence_registrations
+        identifier: ditio_nrcg_userapi_connector_absence_registrations
+      - name: source_ditio_incidents_registration
+        identifier: "{{ 'test_ditio_nrcg_userapi_connector_incidents_registration' if var('use_test_connectors', false) else 'ditio_nrcg_userapi_connector_incidents_registration' }}"
+      - name: source_ditio_payroll_lines
+        identifier: ditio_nrcg_userapi_connector_payroll_lines
+      - name: source_catalyst_employee
+        identifier: catalyst_v1_connector_employee
+      - name: source_catalyst_employee_history
+        identifier: catalyst_v1_connector_employee_history
+      - name: source_catalyst_v2_employee_history
+        identifier: catalyst_connector_employee_history
+      - name: source_unit4_project_account
+        identifier: unit4_api_connector_project_account
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - client
+                - period
+                - account
+                - project
+        
+        columns:
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: client
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - accepted_values:
+                  values: ['45', '70']
+          
+          - name: account
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+          
+          - name: project
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"        # Digits only
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+      - name: source_unit4_project_portfolio
+        identifier: unit4_api_connector_project_portfolio
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - client
+                - period
+                - source_unit4_project_portfolio."projectNo"
+        
+        columns:
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: client
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - accepted_values:
+                  values: ['45', '70']
+          
+          - name: source_unit4_project_portfolio."projectNo"
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+          
+          - name: status
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['Aktiv', 'Parkert', 'Sperret']
+
+      - name: source_ditio_timestyr_nrcg_absence_types
+        identifier: ditio_time_styr_nrcg_userapi_connector_absence_types
+      - name: source_ditio_timestyr_kept_absence_types
+        identifier: ditio_time_styr_kept_userapi_connector_absence_types
+      - name: source_ditio_kept_project
+        identifier: ditio_kept_userapi_connector_project
+      - name: source_ditio_project
+        identifier: ditio_nrcg_userapi_connector_project
+      - name: source_unit4_project_task
+        identifier: unit4_api_connector_project_task
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - source_unit4_project_task."companyId"
+                - source_unit4_project_task."attributeValue"
+                - source_unit4_project_task."periodTo"
+                - source_unit4_project_task."periodFrom"
+                - source_unit4_project_task."attributeId"
+        
+        columns:
+          - name: source_unit4_project_task."periodTo"
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.expression_is_true:
+                  expression: ">= 100000"
+              - dbt_utils.expression_is_true:
+                  expression: "<= 999999"
+          
+          - name: source_unit4_project_task."periodFrom"
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.expression_is_true:
+                  expression: ">= 100000"
+              - dbt_utils.expression_is_true:
+                  expression: "<= 999999"
+
+          - name: source_unit4_project_task."companyId"
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - accepted_values:
+                  values: ['45', '70']
+          
+          - name: source_unit4_project_task."attributeValue"
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+          
+          - name: source_unit4_project_task."attributeId"
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - accepted_values:
+                  values: ['10']
+          
+          - name: source_unit4_project_task."owner"
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+
+          - name: source_unit4_project_task."lastUpdated"
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "IS NOT NULL"
+
+      - name: source_unit4_project_task_account
+        identifier: unit4_api_connector_project_task_account
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - client
+                - period
+                - project
+                - prodkode
+                - kode
+        
+        columns:
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: client
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - accepted_values:
+                  values: ['45', '70']
+          
+          - name: project
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"        # Digits only
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: kode
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['K', 'I']
+          
+          - name: prodkode
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+
+      - name: source_jobylon_jobs
+        identifier: source_jobylon_jobs
+      - name: source_ditio_work_breakdown_structure
+        identifier: ditio_nrcg_userapi_connector_work_breakdown_structure
+      - name: source_unit4_liquidity_project
+        identifier: unit4_liqudityapi_connector_project
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - vo
+                - period
+                - project
+                - department
+                - foeht
+                - clientid
+
+        columns:
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: project
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"        # Digits only
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: department
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: foeht
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: clientid
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+      - name: source_unit4_liquidity_department
+        identifier: unit4_liqudityapi_connector_department
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - vo
+                - period
+                - department
+                - foeht
+                - clientid
+
+        columns:
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: department
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: foeht
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: clientid
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+      - name: source_unit4_liquidity_division
+        identifier: unit4_liqudityapi_connector_division
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - vo
+                - period
+                - foeht
+                - clientid
+
+        columns:
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: foeht
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: clientid
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0" 
+
+      - name: source_unit4_liquidity_company
+        identifier: unit4_liqudityapi_connector_company
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - vo
+                - period
+                - clientid
+
+        columns:
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: clientid
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+      - name: source_unit4_interim_project
+        identifier: unit4_interimapi_connector_project
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+                combination_of_columns:
+                  - vo
+                  - period
+                  - amounttype
+                  - project
+                  - department
+                  - foeht
+                  - clientid
+
+        columns:
+          - name: amounttype
+            tests:
+              - accepted_values:
+                  values: ['12', '05']
+
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: project
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"        # Digits only
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: department
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: foeht
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: clientid
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+      - name: source_unit4_interim_department
+        identifier: unit4_interimapi_connector_department
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+                combination_of_columns:
+                  - vo
+                  - period
+                  - amounttype
+                  - department
+                  - foeht
+                  - clientid
+
+        columns:
+          - name: amounttype
+            tests:
+              - accepted_values:
+                  values: ['12', '05']
+
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: department
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: foeht
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: clientid
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+      - name: source_unit4_interim_division
+        identifier: unit4_interimapi_connector_division
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+                combination_of_columns:
+                  - vo
+                  - period
+                  - amounttype
+                  - foeht
+                  - clientid
+
+        columns:
+          - name: amounttype
+            tests:
+              - accepted_values:
+                  values: ['12', '05']
+
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: foeht
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+          - name: clientid
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+      - name: source_unit4_interim_company
+        identifier: unit4_interimapi_connector_company
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+                combination_of_columns:
+                  - vo
+                  - period
+                  - amounttype
+                  - clientid
+
+        columns:
+          - name: amounttype
+            tests:
+              - accepted_values:
+                  values: ['12', '05']
+
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: clientid
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+      - name: source_endringer_project
+        identifier: endringer_api_connector_project
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [source_endringer_project."Id"]
+        columns:
+          - name: source_endringer_project."name"
+            tests:
+              - not_null
+
+          - name: source_endringer_project."projectnumber"
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+
+      - name: source_endringer_case
+        identifier: endringer_api_connector_case
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [source_endringer_case."Id"]
+
+        columns:
+          - name: source_endringer_case."Type"
+            tests:
+              - not_null
+
+          - name: source_endringer_case."Sender"
+            tests: 
+              - not_null
+
+          - name: source_endringer_case."Status"
+            tests: 
+              - not_null 
+
+          - name: source_endringer_case."Receiver"
+            tests: 
+              - not_null  
+
+          - name: source_endringer_case."CreatedBy"
+            tests:
+              - not_null
+
+          - name: source_endringer_case."ProjectId"
+            tests:
+              - not_null 
+              - dbt_utils.relationships_where:
+                  to: ref('source_endringer_project')
+                  field: source_endringer_project."Id"
+          
+          - name: source_endringer_case."CreatedDate"
+            tests: 
+              - not_null
+          
+          - name: source_endringer_case."ModifiedDate"
+            tests:
+              - not_null
+          
+          - name: source_endringer_case."TotalAmount"
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+          
+          - name: source_endringer_case."AcceptedAmount"
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+
+          - name: source_endringer_case."DeclinedAmount"
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+
+          - name: source_endringer_case."NotHandledAmount"
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+      
+      - name: source_endringer_amount
+        identifier: endringer_api_connector_amount
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+                combination_of_columns:
+                  - "\"ProjectId\""
+                  - "\"CaseType\""
+                  - "\"Month\""
+                  - "\"Year\""
+        
+        columns:
+          - name: "\"ProjectId\""
+            tests:
+              - not_null
+              - dbt_utils.relationships_where:
+                  to: ref('source_endringer_project')
+                  field: source_endringer_project."Id"
+          
+          - name: "\"CaseType\""
+            tests:
+              - not_null
+          
+          - name: "\"Month\""
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 1
+                  max_value: 9
+          
+          - name: "\"Year\""
+            tests:
+              - not_null
+          
+          - name: "\"TotalAmount\""
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+          
+          - name: "\"TotalAcceptedAmount\""
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+
+          - name: "\"TotalDeclinedAmount\""
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+
+          - name: "\"TotalNotHandledAmount\""
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+      
+      - name: source_unit4_invoice_paid_transaction
+        identifier: unit4_invoiceapi_connector_paid_transaction
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - "\"transactionNumber\""
+                - "\"sequenceNumber\""
+                - "COALESCE(invoice ->> 'bacsId', '')"
+ 
+      - name: source_unit4_invoice_unpaid_transaction
+        identifier: unit4_invoiceapi_connector_unpaid_transaction
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - "\"transactionNumber\""
+                - "\"sequenceNumber\""
+                - "COALESCE(invoice ->> 'bacsId', '')"
+      - name: source_unit4_ebit
+        identifier: unit4_ebitapi_connector_ebit
+        tests:
+            - dbt_utils.unique_combination_of_columns:
+                combination_of_columns:
+                  - clientid
+                  - period
+                  - project
+                  - source_unit4_ebit."projectName"
+        
+        columns:
+          - name: period
+            tests:
+              - dbt_utils.expression_is_true:
+                  expression: "/ 100 >= 1900"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 >= 1"
+              - dbt_utils.expression_is_true:
+                  expression: "% 100 <= 12"
+              - dbt_utils.accepted_range:
+                  min_value: 100000
+                  max_value: 999999
+
+          - name: clientid
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"
+              - accepted_values:
+                  values: ['45', '70']
+          
+          - name: source_unit4_ebit."projectName"
+            tests:
+              - not_null
+          
+          - name: project
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "~ '^[0-9]+$'"  
+              - dbt_utils.expression_is_true:
+                  expression: "::numeric >= 0"
+      - name: source_icore_employee
+        identifier: icore_connector_employee
+      - name: source_icore_employee_periodic
+        identifier: icore_connector_employee_periodic
+      - name: source_icore_employee_periodic_current
+        identifier: icore_connector_employee_periodic_current
+      - name: source_icore_hours
+        identifier: icore_connector_hours
+      - name: source_icore_hours_type
+        identifier: icore_connector_hours_type
+      - name: source_icore_hours_status
+        identifier: icore_connector_hours_status
+      
+      - name: source_jobylon_bi_status_log
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [id]
+        columns:
+          - name: id
+            tests:
+              - not_null
+          - name: status
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw_nrc_source', 'source_jobylon_bi_application_status')
+                  field: name
+          - name: dt_created
+            tests:
+              - not_null
+          - name: application_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw_nrc_source', 'source_jobylon_bi_application')
+                  field: id
+
+      - name: source_jobylon_bi_job_layers
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - name
+                - text
+                - job_id
+                - dimension
+                - company_id
+                - layerconfig_id
+                - layeroption_id
+        columns:
+          - name: name
+            tests: [not_null]
+          - name: text
+            tests: [not_null]
+          - name: job_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw_nrc_source', 'source_jobylon_bi_job')
+                  field: id
+          - name: dimension
+            tests: [not_null]
+          - name: company_id
+            tests: [not_null]
+          - name: layerconfig_id
+            tests: [not_null]
+          - name: layeroption_id
+            tests: [not_null]
+
+      - name: source_jobylon_bi_application
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [id]
+        columns:
+          - name: id
+            tests:
+              - not_null
+          - name: ref
+          - name: email
+            tests:
+              - not_null
+          - name: gclid
+          - name: job_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw_nrc_source', 'source_jobylon_bi_job')
+                  field: id
+          - name: source
+          - name: status
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw_nrc_source', 'source_jobylon_bi_application_status')
+                  field: name
+          - name: ab_test
+          - name: utm_term
+          - name: last_name
+            tests: [not_null]
+          - name: status_id
+            tests: [not_null]
+          - name: dt_created
+            tests: [not_null]
+          - name: first_name
+            tests: [not_null]
+          - name: utm_medium
+          - name: utm_source
+          - name: agency_name
+          - name: dt_modified
+            tests: [not_null]
+          - name: source_type
+            tests: [not_null]
+          - name: uploaded_by
+          - name: utm_content
+          - name: status_group
+            tests: [not_null]
+          - name: utm_campaign
+          - name: rating_average
+          - name: recommender_name
+          - name: rejection_reason
+          - name: application_owner
+          - name: original_referrer
+          - name: recommender_email
+          - name: rejection_communicated
+            tests: [not_null]
+
+      - name: source_jobylon_bi_job
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [id]
+        columns:
+          - name: id
+            tests:
+              - not_null
+          - name: title
+            tests:
+              - not_null
+          - name: status
+            tests:
+              - not_null
+          - name: to_date
+          - name: from_date
+          - name: is_hidden
+            tests:
+              - not_null
+          - name: job_owner
+          - name: company_id
+            tests:
+              - not_null
+          - name: dt_created
+            tests:
+              - not_null
+          - name: dt_modified
+            tests:
+              - not_null
+          - name: is_internal
+            tests:
+              - not_null
+          - name: is_template
+            tests:
+              - not_null
+          - name: is_confidential
+            tests:
+              - not_null
+          - name: internal_reference

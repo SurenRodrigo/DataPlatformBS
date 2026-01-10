@@ -1,0 +1,28 @@
+SELECT
+    {{ dbt_utils.generate_surrogate_key(['internal_id','client_id'])}} 
+                     AS vehicle_id,
+    2                AS tenant_id,
+    'Gunnar Knutsen' AS tenant_name,
+    6                AS data_source_id,
+    'Admmit'         AS data_source_name,
+    vin,
+    name,
+    brand,
+    model,
+    client_id,
+    hanger_id,
+    is_active,
+    is_hanger,
+    created_on,
+    is_deleted,
+    employee_id,
+    internal_id,
+    modified_on,
+    description,
+    display_name,
+    department_id,
+    vehicle_type_id,
+    department_name,
+    vehicle_type_name,
+    registration_number
+FROM {{ ref('stg__admmit_vehicle') }}

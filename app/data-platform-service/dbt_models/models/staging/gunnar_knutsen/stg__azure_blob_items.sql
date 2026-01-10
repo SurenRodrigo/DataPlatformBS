@@ -1,0 +1,25 @@
+SELECT
+    "Id"                  AS id,
+    "Name"                AS item_name,
+    "CreatedOn"           AS created_on,
+    "CreatedBy"           AS created_by,
+    "ModifiedOn"          AS modified_on,
+    "ModifiedBy"          AS modified_by,
+    "ClientId"            AS client_id,
+    "Price"               AS price,
+    "Unit"                AS unit,
+    "ItemGroupId"         AS item_group_id,
+    "ExternalId"          AS external_id,
+    "ExternalIdOut"       AS external_id_out,
+    "VatId"               AS vat_id,
+    "NonInvoicable"       AS non_invoicable,
+    "IsInActive"          AS is_in_active,
+    "ItemVehicleTypeId"     AS item_vehicle_type_id,
+    "UnitId"              AS unit_id,
+    "IsDeleted"           AS is_deleted,
+    dbt_scd_id,
+    dbt_updated_at,
+    dbt_valid_from,
+    dbt_valid_to
+FROM {{ ref('gk_azure_blob_items_snapshot') }}
+WHERE dbt_valid_to IS NULL

@@ -1,0 +1,868 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - vehicles
+
+definitions:
+  streams:
+    vehicles:
+      type: DeclarativeStream
+      name: vehicles
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_token_option:
+            type: RequestOption
+            field_name: lastVin
+            inject_into: request_parameter
+          pagination_strategy:
+            type: CursorPagination
+            cursor_field: lastVin
+            cursor_value: '{{ last_record[''vin''] }}'
+            stop_condition: '{{ not response[''moreDataAvailable''] }}'
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: vehicles
+          http_method: GET
+          request_headers:
+            Accept: application/json; rfms=vehicles.v4.0
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - vehicleResponse
+              - vehicles
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/vehicles'
+    vehiclestatuses:
+      type: DeclarativeStream
+      name: vehiclestatuses
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: vehiclestatuses
+          http_method: GET
+          request_headers:
+            Accept: application/json; rfms=vehiclestatuses.v4.0
+          request_parameters:
+            latestOnly: 'true'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - vehicleStatusResponse
+              - vehicleStatuses
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/vehiclestatuses'
+    vehiclepositions:
+      type: DeclarativeStream
+      name: vehiclepositions
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: vehiclepositions
+          http_method: GET
+          request_headers:
+            Accept: application/json; rfms=vehiclepositions.v4.0
+          request_parameters:
+            latestOnly: 'true'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - vehiclePositionResponse
+              - vehiclePositions
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/vehiclepositions'
+  base_requester:
+    type: HttpRequester
+    url_base: https://dataaccess.scania.com/rfms4/
+    authenticator:
+      type: BearerAuthenticator
+      api_token: '{{ config[''api_key''] }}'
+
+streams:
+  - $ref: '#/definitions/streams/vehicles'
+  - $ref: '#/definitions/streams/vehiclestatuses'
+  - $ref: '#/definitions/streams/vehiclepositions'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - api_key
+    properties:
+      api_key:
+        type: string
+        order: 0
+        title: API Key
+        airbyte_secret: true
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    vehicles: true
+    vehiclestatuses: true
+    vehiclepositions: true
+
+schemas:
+  vehicles:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      type:
+        type:
+          - string
+          - 'null'
+      vin:
+        type:
+          - string
+          - 'null'
+      brand:
+        type:
+          - string
+          - 'null'
+      model:
+        type:
+          - string
+          - 'null'
+      noOfAxles:
+        type:
+          - number
+          - 'null'
+      chassisType:
+        type:
+          - string
+          - 'null'
+      gearboxType:
+        type:
+          - string
+          - 'null'
+      emissionLevel:
+        type:
+          - string
+          - 'null'
+      hasRampOrLift:
+        type:
+          - boolean
+          - 'null'
+      productionDate:
+        type:
+          - object
+          - 'null'
+        properties:
+          day:
+            type:
+              - number
+              - 'null'
+          year:
+            type:
+              - number
+              - 'null'
+          month:
+            type:
+              - number
+              - 'null'
+      tachographType:
+        type:
+          - string
+          - 'null'
+      authorizedPaths:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      possibleFuelType:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      customerVehicleName:
+        type:
+          - string
+          - 'null'
+      totalFuelTankVolume:
+        type:
+          - number
+          - 'null'
+    additionalProperties: true
+  vehiclestatuses:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      vin:
+        type:
+          - string
+          - 'null'
+      driver1Id:
+        type:
+          - object
+          - 'null'
+        properties:
+          oemDriverIdentification:
+            type:
+              - object
+              - 'null'
+            properties:
+              idType:
+                type:
+                  - string
+                  - 'null'
+              oemDriverIdentification:
+                type:
+                  - string
+                  - 'null'
+          tachoDriverIdentification:
+            type:
+              - object
+              - 'null'
+            properties:
+              driverIdentification:
+                type:
+                  - string
+                  - 'null'
+              cardIssuingMemberState:
+                type:
+                  - string
+                  - 'null'
+      doorStatus:
+        type:
+          - array
+          - 'null'
+      uptimeData:
+        type:
+          - object
+          - 'null'
+        properties:
+          tellTaleInfo:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                state:
+                  type:
+                    - string
+                    - 'null'
+                tellTale:
+                  type:
+                    - string
+                    - 'null'
+          alternatorInfo:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                alternatorNumber:
+                  type:
+                    - number
+                    - 'null'
+                alternatorStatus:
+                  type:
+                    - string
+                    - 'null'
+          serviceDistance:
+            type:
+              - number
+              - 'null'
+          engineCoolantTemperature:
+            type:
+              - number
+              - 'null'
+          bellowPressureRearAxleLeft:
+            type:
+              - number
+              - 'null'
+          serviceBrakeAirPressureCircuit1:
+            type:
+              - number
+              - 'null'
+          serviceBrakeAirPressureCircuit2:
+            type:
+              - number
+              - 'null'
+      triggerType:
+        type:
+          - object
+          - 'null'
+        properties:
+          context:
+            type:
+              - string
+              - 'null'
+          triggerType:
+            type:
+              - string
+              - 'null'
+      snapshotData:
+        type:
+          - object
+          - 'null'
+        properties:
+          fuelLevel1:
+            type:
+              - number
+              - 'null'
+          gnssPosition:
+            type:
+              - object
+              - 'null'
+            properties:
+              speed:
+                type:
+                  - number
+                  - 'null'
+              heading:
+                type:
+                  - string
+                  - 'null'
+              altitude:
+                type:
+                  - number
+                  - 'null'
+              latitude:
+                type:
+                  - number
+                  - 'null'
+              longitude:
+                type:
+                  - number
+                  - 'null'
+              positionDateTime:
+                type:
+                  - string
+                  - 'null'
+          vehicleAxles:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                vehicleAxleLoad:
+                  type:
+                    - number
+                    - 'null'
+                vehicleAxlePosition:
+                  type:
+                    - number
+                    - 'null'
+          tachographSpeed:
+            type:
+              - number
+              - 'null'
+          wheelBasedSpeed:
+            type:
+              - number
+              - 'null'
+          catalystFuelLevel:
+            type:
+              - number
+              - 'null'
+          driver1WorkingState:
+            type:
+              - string
+              - 'null'
+          driver2WorkingState:
+            type:
+              - string
+              - 'null'
+          ambientAirTemperature:
+            type:
+              - number
+              - 'null'
+          estimatedDistanceToEmpty:
+            type:
+              - object
+              - 'null'
+            properties:
+              fuel:
+                type:
+                  - number
+                  - 'null'
+              total:
+                type:
+                  - number
+                  - 'null'
+      status2OfDoors:
+        type:
+          - string
+          - 'null'
+      accumulatedData:
+        type:
+          - object
+          - 'null'
+        properties:
+          ptoActiveClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                label:
+                  type:
+                    - string
+                    - 'null'
+                meters:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+                watthours:
+                  type:
+                    - number
+                    - 'null'
+                milliLitres:
+                  type:
+                    - number
+                    - 'null'
+          currentGearClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                label:
+                  type:
+                    - string
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          engineSpeedClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                to:
+                  type:
+                    - number
+                    - 'null'
+                from:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          accelerationClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                to:
+                  type:
+                    - number
+                    - 'null'
+                from:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          engineTorqueClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                to:
+                  type:
+                    - number
+                    - 'null'
+                from:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          selectedGearClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                label:
+                  type:
+                    - string
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          vehicleSpeedClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                to:
+                  type:
+                    - number
+                    - 'null'
+                from:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          retarderTorqueClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                to:
+                  type:
+                    - number
+                    - 'null'
+                from:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          highAccelerationClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                to:
+                  type:
+                    - number
+                    - 'null'
+                from:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          fuelWheelbasedSpeedZero:
+            type:
+              - number
+              - 'null'
+          drivingWithoutTorqueClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                label:
+                  type:
+                    - string
+                    - 'null'
+                meters:
+                  type:
+                    - number
+                    - 'null'
+          distanceCruiseControlActive:
+            type:
+              - number
+              - 'null'
+          durationCruiseControlActive:
+            type:
+              - number
+              - 'null'
+          durationWheelbasedSpeedZero:
+            type:
+              - number
+              - 'null'
+          fuelWheelbasedSpeedOverZero:
+            type:
+              - number
+              - 'null'
+          accelerationDuringBrakeClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                to:
+                  type:
+                    - number
+                    - 'null'
+                from:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          accelerationPedalPositionClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                to:
+                  type:
+                    - number
+                    - 'null'
+                from:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          brakePedalCounterSpeedOverZero:
+            type:
+              - number
+              - 'null'
+          durationWheelbasedSpeedOverZero:
+            type:
+              - number
+              - 'null'
+          engineTorqueAtCurrentSpeedClass:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                to:
+                  type:
+                    - number
+                    - 'null'
+                from:
+                  type:
+                    - number
+                    - 'null'
+                seconds:
+                  type:
+                    - number
+                    - 'null'
+          electricEnergyWheelbasedSpeedZero:
+            type:
+              - number
+              - 'null'
+          fuelConsumptionDuringCruiseActive:
+            type:
+              - number
+              - 'null'
+          distanceBrakePedalActiveSpeedOverZero:
+            type:
+              - number
+              - 'null'
+          electricEnergyWheelbasedSpeedOverZero:
+            type:
+              - number
+              - 'null'
+      createdDateTime:
+        type:
+          - string
+          - 'null'
+      receivedDateTime:
+        type:
+          - string
+          - 'null'
+      totalEngineHours:
+        type:
+          - number
+          - 'null'
+      engineTotalFuelUsed:
+        type:
+          - number
+          - 'null'
+      hrTotalVehicleDistance:
+        type:
+          - number
+          - 'null'
+      totalElectricEnergyUsed:
+        type:
+          - number
+          - 'null'
+      totalElectricMotorHours:
+        type:
+          - number
+          - 'null'
+      grossCombinationVehicleWeight:
+        type:
+          - number
+          - 'null'
+    additionalProperties: true
+  vehiclepositions:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      vin:
+        type:
+          - string
+          - 'null'
+      triggerType:
+        type:
+          - object
+          - 'null'
+        properties:
+          context:
+            type:
+              - string
+              - 'null'
+          driverId:
+            type:
+              - object
+              - 'null'
+            properties:
+              oemDriverIdentification:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  idType:
+                    type:
+                      - string
+                      - 'null'
+                  oemDriverIdentification:
+                    type:
+                      - string
+                      - 'null'
+              tachoDriverIdentification:
+                type:
+                  - object
+                  - 'null'
+                properties:
+                  driverIdentification:
+                    type:
+                      - string
+                      - 'null'
+                  cardIssuingMemberState:
+                    type:
+                      - string
+                      - 'null'
+          triggerType:
+            type:
+              - string
+              - 'null'
+      gnssPosition:
+        type:
+          - object
+          - 'null'
+        properties:
+          speed:
+            type:
+              - number
+              - 'null'
+          heading:
+            type:
+              - string
+              - 'null'
+          altitude:
+            type:
+              - number
+              - 'null'
+          latitude:
+            type:
+              - number
+              - 'null'
+          longitude:
+            type:
+              - number
+              - 'null'
+          positionDateTime:
+            type:
+              - string
+              - 'null'
+      createdDateTime:
+        type:
+          - string
+          - 'null'
+      wheelBasedSpeed:
+        type:
+          - number
+          - 'null'
+      receivedDateTime:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true

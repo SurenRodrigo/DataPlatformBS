@@ -1,0 +1,1329 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - project
+
+definitions:
+  streams:
+    project:
+      type: DeclarativeStream
+      name: project
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_size_option:
+            type: RequestOption
+            field_name: limit
+            inject_into: request_parameter
+          page_token_option:
+            type: RequestOption
+            field_name: offset
+            inject_into: request_parameter
+          pagination_strategy:
+            type: OffsetIncrement
+            page_size: 500
+            inject_on_first_request: true
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: /v1/objects/projects
+          http_method: GET
+          request_headers:
+            Accept: text/plain
+          request_parameters:
+            companyId: '{{ stream_partition[''companyIds''] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: companyIds
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/project'
+    customer:
+      type: DeclarativeStream
+      name: customer
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_size_option:
+            type: RequestOption
+            field_name: limit
+            inject_into: request_parameter
+          page_token_option:
+            type: RequestOption
+            field_name: offset
+            inject_into: request_parameter
+          pagination_strategy:
+            type: OffsetIncrement
+            page_size: 500
+            inject_on_first_request: true
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: /v1/objects/customers
+          http_method: GET
+          request_headers:
+            Accept: text/plain
+          request_parameters:
+            companyId: '45'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/customer'
+    project_task:
+      type: DeclarativeStream
+      name: project_task
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_size_option:
+            type: RequestOption
+            field_name: limit
+            inject_into: request_parameter
+          page_token_option:
+            type: RequestOption
+            field_name: offset
+            inject_into: request_parameter
+          pagination_strategy:
+            type: OffsetIncrement
+            page_size: 5000
+            inject_on_first_request: true
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: /v1/objects/attribute-values
+          http_method: GET
+          request_parameters:
+            filter: attributeId eq '10'
+            companyId: '{{ stream_partition[''companyIds''] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: companyIds
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/project_task'
+    project_account:
+      type: DeclarativeStream
+      name: project_account
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_size_option:
+            type: RequestOption
+            field_name: limit
+            inject_into: request_parameter
+          page_token_option:
+            type: RequestOption
+            field_name: offset
+            inject_into: request_parameter
+          pagination_strategy:
+            type: OffsetIncrement
+            page_size: 5000
+            inject_on_first_request: true
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: /v1/objects/pbiprojokonomiktos
+          http_method: GET
+          request_parameters:
+            filter: 'period ge 202001 and client eq ''{{ stream_partition.client }}'' '
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: client
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/project_account'
+    project_portfolio:
+      type: DeclarativeStream
+      name: project_portfolio
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_size_option:
+            type: RequestOption
+            field_name: limit
+            inject_into: request_parameter
+          page_token_option:
+            type: RequestOption
+            field_name: offset
+            inject_into: request_parameter
+          pagination_strategy:
+            type: OffsetIncrement
+            page_size: 5000
+            inject_on_first_request: true
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: /v1/objects/pbiproportfolios
+          http_method: GET
+          request_parameters:
+            filter: 'client eq ''{{ stream_partition.client }}'' '
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: client
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/project_portfolio'
+    project_task_account:
+      type: DeclarativeStream
+      name: project_task_account
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_size_option:
+            type: RequestOption
+            field_name: limit
+            inject_into: request_parameter
+          page_token_option:
+            type: RequestOption
+            field_name: offset
+            inject_into: request_parameter
+          pagination_strategy:
+            type: OffsetIncrement
+            page_size: 5000
+            inject_on_first_request: true
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: /v1/objects/pbiprojokonomipks
+          http_method: GET
+          request_parameters:
+            filter: 'client eq ''{{ stream_partition.client }}'' '
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: client
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/project_task_account'
+  base_requester:
+    type: HttpRequester
+    url_base: https://web-api.tellitportal.no/NRC-api
+    authenticator:
+      type: BasicHttpAuthenticator
+      password: "{{ config[\"password\"] }}"
+      username: "{{ config[\"username\"] }}"
+
+streams:
+  - $ref: '#/definitions/streams/project'
+  - $ref: '#/definitions/streams/customer'
+  - $ref: '#/definitions/streams/project_account'
+  - $ref: '#/definitions/streams/project_task_account'
+  - $ref: '#/definitions/streams/project_portfolio'
+  - $ref: '#/definitions/streams/project_task'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - username
+    properties:
+      password:
+        type: string
+        order: 1
+        title: Password
+        always_show: true
+        airbyte_secret: true
+      username:
+        type: string
+        order: 0
+        title: Username
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    project: true
+    customer: true
+    project_task: true
+    project_account: true
+    project_portfolio: true
+    project_task_account: true
+
+schemas:
+  project:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      wbs:
+        type:
+          - string
+          - 'null'
+      status:
+        type:
+          - string
+          - 'null'
+      message:
+        type:
+          - string
+          - 'null'
+      category1:
+        type:
+          - string
+          - 'null'
+      category2:
+        type:
+          - string
+          - 'null'
+      category3:
+        type:
+          - string
+          - 'null'
+      category4:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      projectId:
+        type:
+          - string
+          - 'null'
+      costCentre:
+        type:
+          - string
+          - 'null'
+      lastUpdated:
+        type:
+          - object
+          - 'null'
+        properties:
+          updatedAt:
+            type:
+              - string
+              - 'null'
+          updatedBy:
+            type:
+              - string
+              - 'null'
+      mainProject:
+        type:
+          - string
+          - 'null'
+      probability:
+        type:
+          - number
+          - 'null'
+      projectName:
+        type:
+          - string
+          - 'null'
+      projectType:
+        type:
+          - string
+          - 'null'
+      authorisation:
+        type:
+          - string
+          - 'null'
+      contactPoints:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            address:
+              type:
+                - object
+                - 'null'
+              properties:
+                place:
+                  type:
+                    - string
+                    - 'null'
+                postcode:
+                  type:
+                    - string
+                    - 'null'
+                province:
+                  type:
+                    - string
+                    - 'null'
+                countryCode:
+                  type:
+                    - string
+                    - 'null'
+                streetAddress:
+                  type:
+                    - string
+                    - 'null'
+            lastUpdated:
+              type:
+                - object
+                - 'null'
+              properties:
+                updatedAt:
+                  type:
+                    - string
+                    - 'null'
+                updatedBy:
+                  type:
+                    - string
+                    - 'null'
+            phoneNumbers:
+              type:
+                - object
+                - 'null'
+              properties:
+                telephone1:
+                  type:
+                    - string
+                    - 'null'
+                telephone2:
+                  type:
+                    - string
+                    - 'null'
+                telephone3:
+                  type:
+                    - string
+                    - 'null'
+                telephone4:
+                  type:
+                    - string
+                    - 'null'
+                telephone5:
+                  type:
+                    - string
+                    - 'null'
+                telephone6:
+                  type:
+                    - string
+                    - 'null'
+                telephone7:
+                  type:
+                    - string
+                    - 'null'
+            contactPointType:
+              type:
+                - string
+                - 'null'
+            additionalContactInfo:
+              type:
+                - object
+                - 'null'
+              properties:
+                url:
+                  type:
+                    - string
+                    - 'null'
+                gtin:
+                  type:
+                    - string
+                    - 'null'
+                eMail:
+                  type:
+                    - string
+                    - 'null'
+                eMailCc:
+                  type:
+                    - string
+                    - 'null'
+                contactPerson:
+                  type:
+                    - string
+                    - 'null'
+                contactPosition:
+                  type:
+                    - string
+                    - 'null'
+      hasActivities:
+        type:
+          - boolean
+          - 'null'
+      postTimeCosts:
+        type:
+          - boolean
+          - 'null'
+      relatedValues:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            dateTo:
+              type:
+                - string
+                - 'null'
+            dateFrom:
+              type:
+                - string
+                - 'null'
+            unitValue:
+              type:
+                - number
+                - 'null'
+            percentage:
+              type:
+                - number
+                - 'null'
+            relationId:
+              type:
+                - string
+                - 'null'
+            relatedValue:
+              type:
+                - string
+                - 'null'
+            relationName:
+              type:
+                - string
+                - 'null'
+            relationGroup:
+              type:
+                - string
+                - 'null'
+      workflowState:
+        type:
+          - string
+          - 'null'
+      isGlobalProject:
+        type:
+          - boolean
+          - 'null'
+      projectDuration:
+        type:
+          - object
+          - 'null'
+        properties:
+          dateTo:
+            type:
+              - string
+              - 'null'
+          dateFrom:
+            type:
+              - string
+              - 'null'
+          completed:
+            type:
+              - string
+              - 'null'
+          createdAt:
+            type:
+              - string
+              - 'null'
+          timesheetCompletionDate:
+            type:
+              - string
+              - 'null'
+      projectManagerId:
+        type:
+          - string
+          - 'null'
+      authoriseOvertime:
+        type:
+          - boolean
+          - 'null'
+      customFieldGroups:
+        type:
+          - object
+          - 'null'
+        properties:
+          attest:
+            type:
+              - object
+              - 'null'
+            properties:
+              attest_1_fx:
+                type:
+                  - string
+                  - 'null'
+              attest_2_fx:
+                type:
+                  - string
+                  - 'null'
+              attest_3_fx:
+                type:
+                  - string
+                  - 'null'
+          innest:
+            type:
+              - object
+              - 'null'
+            properties:
+              kommentar_fx:
+                type:
+                  - string
+                  - 'null'
+              kontraktssum_fx:
+                type:
+                  - number
+                  - 'null'
+              innest_av_kont_fx:
+                type:
+                  - string
+                  - 'null'
+              innest_av_utfo_fx:
+                type:
+                  - string
+                  - 'null'
+          prolevatt:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - object
+                - 'null'
+              properties:
+                att_1_fx:
+                  type:
+                    - string
+                    - 'null'
+                att_2_fx:
+                  type:
+                    - string
+                    - 'null'
+                att_3_fx:
+                  type:
+                    - string
+                    - 'null'
+                leverandoer_fx:
+                  type:
+                    - string
+                    - 'null'
+      containsWorkOrders:
+        type:
+          - boolean
+          - 'null'
+      customerInformation:
+        type:
+          - object
+          - 'null'
+        properties:
+          reference:
+            type:
+              - string
+              - 'null'
+          customerId:
+            type:
+              - string
+              - 'null'
+          invoiceCode:
+            type:
+              - string
+              - 'null'
+          currencyCode:
+            type:
+              - string
+              - 'null'
+          currencyType:
+            type:
+              - string
+              - 'null'
+          invoiceLevel:
+            type:
+              - string
+              - 'null'
+          invoiceStatus:
+            type:
+              - string
+              - 'null'
+          paymentTermsId:
+            type:
+              - string
+              - 'null'
+          externalReference:
+            type:
+              - string
+              - 'null'
+          invoiceSeparately:
+            type:
+              - boolean
+              - 'null'
+          invoiceSpecification:
+            type:
+              - string
+              - 'null'
+      isSupportingProject:
+        type:
+          - boolean
+          - 'null'
+      authoriseNormalHours:
+        type:
+          - boolean
+          - 'null'
+      hasTimeSheetLimitControl:
+        type:
+          - boolean
+          - 'null'
+    additionalProperties: true
+  customer:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      note:
+        type:
+          - string
+          - 'null'
+      invoice:
+        type:
+          - object
+          - 'null'
+        properties:
+          message:
+            type:
+              - string
+              - 'null'
+          taxSystem:
+            type:
+              - string
+              - 'null'
+          headOffice:
+            type:
+              - string
+              - 'null'
+          supplierId:
+            type:
+              - string
+              - 'null'
+          creditLimit:
+            type:
+              - number
+              - 'null'
+          currencyCode:
+            type:
+              - string
+              - 'null'
+          discountCode:
+            type:
+              - string
+              - 'null'
+          languageCode:
+            type:
+              - string
+              - 'null'
+          maxCreditDays:
+            type:
+              - number
+              - 'null'
+          paymentTermsId:
+            type:
+              - string
+              - 'null'
+          hasFixedCurrency:
+            type:
+              - boolean
+              - 'null'
+          isSundryCustomer:
+            type:
+              - boolean
+              - 'null'
+          hasFixedTaxSystem:
+            type:
+              - boolean
+              - 'null'
+          hasFixedPaymentTerms:
+            type:
+              - boolean
+              - 'null'
+          checkCreditOnHeadOffice:
+            type:
+              - boolean
+              - 'null'
+          paymentPlanTemplateCode:
+            type:
+              - string
+              - 'null'
+          calculatePayDiscountOnTax:
+            type:
+              - boolean
+              - 'null'
+      payment:
+        type:
+          - object
+          - 'null'
+        properties:
+          iban:
+            type:
+              - string
+              - 'null'
+          swift:
+            type:
+              - string
+              - 'null'
+          status:
+            type:
+              - string
+              - 'null'
+          expiryDate:
+            type:
+              - string
+              - 'null'
+          bankAccount:
+            type:
+              - string
+              - 'null'
+          otherAccount:
+            type:
+              - string
+              - 'null'
+          payRecipient:
+            type:
+              - string
+              - 'null'
+          paymentMethod:
+            type:
+              - string
+              - 'null'
+          postalAccount:
+            type:
+              - string
+              - 'null'
+          bankClearingCode:
+            type:
+              - string
+              - 'null'
+          debtCollectionCode:
+            type:
+              - string
+              - 'null'
+      aliasName:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      customerId:
+        type:
+          - string
+          - 'null'
+      countryCode:
+        type:
+          - string
+          - 'null'
+      lastUpdated:
+        type:
+          - object
+          - 'null'
+        properties:
+          updatedAt:
+            type:
+              - string
+              - 'null'
+          updatedBy:
+            type:
+              - string
+              - 'null'
+      customerName:
+        type:
+          - string
+          - 'null'
+      contactPoints:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            address:
+              type:
+                - object
+                - 'null'
+              properties:
+                place:
+                  type:
+                    - string
+                    - 'null'
+                postcode:
+                  type:
+                    - string
+                    - 'null'
+                province:
+                  type:
+                    - string
+                    - 'null'
+                countryCode:
+                  type:
+                    - string
+                    - 'null'
+                streetAddress:
+                  type:
+                    - string
+                    - 'null'
+            lastUpdated:
+              type:
+                - object
+                - 'null'
+              properties:
+                updatedAt:
+                  type:
+                    - string
+                    - 'null'
+                updatedBy:
+                  type:
+                    - string
+                    - 'null'
+            phoneNumbers:
+              type:
+                - object
+                - 'null'
+              properties:
+                telephone1:
+                  type:
+                    - string
+                    - 'null'
+                telephone2:
+                  type:
+                    - string
+                    - 'null'
+                telephone3:
+                  type:
+                    - string
+                    - 'null'
+                telephone4:
+                  type:
+                    - string
+                    - 'null'
+                telephone5:
+                  type:
+                    - string
+                    - 'null'
+                telephone6:
+                  type:
+                    - string
+                    - 'null'
+                telephone7:
+                  type:
+                    - string
+                    - 'null'
+            contactPointType:
+              type:
+                - string
+                - 'null'
+            additionalContactInfo:
+              type:
+                - object
+                - 'null'
+              properties:
+                url:
+                  type:
+                    - string
+                    - 'null'
+                gtin:
+                  type:
+                    - string
+                    - 'null'
+                eMail:
+                  type:
+                    - string
+                    - 'null'
+                eMailCc:
+                  type:
+                    - string
+                    - 'null'
+                contactPerson:
+                  type:
+                    - string
+                    - 'null'
+                contactPosition:
+                  type:
+                    - string
+                    - 'null'
+      relatedValues:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            dateTo:
+              type:
+                - string
+                - 'null'
+            dateFrom:
+              type:
+                - string
+                - 'null'
+            unitValue:
+              type:
+                - number
+                - 'null'
+            percentage:
+              type:
+                - number
+                - 'null'
+            relationId:
+              type:
+                - string
+                - 'null'
+            relatedValue:
+              type:
+                - string
+                - 'null'
+            relationName:
+              type:
+                - string
+                - 'null'
+            relationGroup:
+              type:
+                - string
+                - 'null'
+      workflowState:
+        type:
+          - string
+          - 'null'
+      customerGroupId:
+        type:
+          - string
+          - 'null'
+      customFieldGroups:
+        type:
+          - object
+          - 'null'
+      externalReference:
+        type:
+          - string
+          - 'null'
+      vatRegistrationNumber:
+        type:
+          - string
+          - 'null'
+      companyRegistrationNumber:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  project_task:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      owner:
+        type:
+          - string
+          - 'null'
+      status:
+        type:
+          - string
+          - 'null'
+      periodTo:
+        type:
+          - number
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      periodFrom:
+        type:
+          - number
+          - 'null'
+      attributeId:
+        type:
+          - string
+          - 'null'
+      customValue:
+        type:
+          - number
+          - 'null'
+      description:
+        type:
+          - string
+          - 'null'
+      lastUpdated:
+        type:
+          - object
+          - 'null'
+        properties:
+          updatedAt:
+            type:
+              - string
+              - 'null'
+          updatedBy:
+            type:
+              - string
+              - 'null'
+      attributeName:
+        type:
+          - string
+          - 'null'
+      attributeValue:
+        type:
+          - string
+          - 'null'
+      ownerAttributeId:
+        type:
+          - string
+          - 'null'
+      ownerAttributeName:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  project_account:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      client:
+        type:
+          - string
+          - 'null'
+      period:
+        type:
+          - number
+          - 'null'
+      account:
+        type:
+          - string
+          - 'null'
+      project:
+        type:
+          - string
+          - 'null'
+      amountAcc:
+        type:
+          - number
+          - 'null'
+      amountYtd:
+        type:
+          - number
+          - 'null'
+      accountDescr:
+        type:
+          - string
+          - 'null'
+      amountPeriod:
+        type:
+          - number
+          - 'null'
+    additionalProperties: true
+  project_portfolio:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      accEst:
+        type:
+          - number
+          - 'null'
+      accInv:
+        type:
+          - number
+          - 'null'
+      client:
+        type:
+          - string
+          - 'null'
+      invKap:
+        type:
+          - number
+          - 'null'
+      period:
+        type:
+          - number
+          - 'null'
+      proTyp:
+        type:
+          - string
+          - 'null'
+      status:
+        type:
+          - string
+          - 'null'
+      ytdEst:
+        type:
+          - number
+          - 'null'
+      accEbit:
+        type:
+          - number
+          - 'null'
+      accInnt:
+        type:
+          - number
+          - 'null'
+      orCurry:
+        type:
+          - number
+          - 'null'
+      project:
+        type:
+          - string
+          - 'null'
+      yearInv:
+        type:
+          - number
+          - 'null'
+      ytdEbit:
+        type:
+          - number
+          - 'null'
+      ytdInnt:
+        type:
+          - number
+          - 'null'
+      divisjon:
+        type:
+          - string
+          - 'null'
+      orCurry1:
+        type:
+          - number
+          - 'null'
+      orCurry2:
+        type:
+          - number
+          - 'null'
+      accBidrag:
+        type:
+          - number
+          - 'null'
+      periodInv:
+        type:
+          - number
+          - 'null'
+      projectNo:
+        type:
+          - string
+          - 'null'
+      ytdBidrag:
+        type:
+          - number
+          - 'null'
+      orCurryRes:
+        type:
+          - number
+          - 'null'
+      orderstock:
+        type:
+          - number
+          - 'null'
+      periodEbit:
+        type:
+          - number
+          - 'null'
+      periodInnt:
+        type:
+          - number
+          - 'null'
+      proTypText:
+        type:
+          - string
+          - 'null'
+      orCurryRes1:
+        type:
+          - number
+          - 'null'
+      orCurryRes2:
+        type:
+          - number
+          - 'null'
+      accEstBidrag:
+        type:
+          - number
+          - 'null'
+      periodBidrag:
+        type:
+          - number
+          - 'null'
+      ytdEstBidrag:
+        type:
+          - number
+          - 'null'
+    additionalProperties: true
+  project_task_account:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      kode:
+        type:
+          - string
+          - 'null'
+      client:
+        type:
+          - string
+          - 'null'
+      period:
+        type:
+          - number
+          - 'null'
+      project:
+        type:
+          - string
+          - 'null'
+      prodkode:
+        type:
+          - string
+          - 'null'
+      amountAcc:
+        type:
+          - number
+          - 'null'
+      amountYtd:
+        type:
+          - number
+          - 'null'
+      amountPeriod:
+        type:
+          - number
+          - 'null'
+      prodkodeNavn:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true

@@ -1,0 +1,121 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - ebit
+
+definitions:
+  streams:
+    ebit:
+      type: DeclarativeStream
+      name: ebit
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: tviwiebitpros
+          http_method: GET
+          request_headers:
+            Accept: '*/*'
+          request_parameters:
+            filter: clientid eq '{{ stream_partition['clientIds'] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: clientIds
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/ebit'
+  base_requester:
+    type: HttpRequester
+    url_base: https://web-api.tellitportal.no/NRC-api/v1/objects/
+    authenticator:
+      type: BasicHttpAuthenticator
+      password: '{{ config[''password''] }}'
+      username: '{{ config[''username''] }}'
+
+streams:
+  - $ref: '#/definitions/streams/ebit'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - username
+      - password
+    properties:
+      password:
+        type: string
+        order: 1
+        title: Password
+        always_show: true
+        airbyte_secret: true
+      username:
+        type: string
+        order: 0
+        title: Username
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    ebit: false
+
+schemas:
+  ebit:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      period:
+        type:
+          - number
+          - 'null'
+      accEbit:
+        type:
+          - number
+          - 'null'
+      accRevenue:
+        type:
+          - number
+          - 'null'
+      project:
+        type:
+          - string
+          - 'null'
+      ytdEbit:
+        type:
+          - number
+          - 'null'
+      ytdRevenue:
+        type:
+          - number
+          - 'null'
+      clientid:
+        type:
+          - string
+          - 'null'
+      periodEbit:
+        type:
+          - number
+          - 'null'
+      periodRevenue:
+        type:
+          - number
+          - 'null'
+      projectName:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true

@@ -1,0 +1,297 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - project
+
+definitions:
+  streams:
+    company:
+      type: DeclarativeStream
+      name: company
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: tviwiinvkapkds
+          http_method: GET
+          request_headers:
+            Accept: '*/*'
+          request_parameters:
+            filter: clientid eq '{{ stream_partition['clientIds'] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: clientIds
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/company'
+    project:
+      type: DeclarativeStream
+      name: project
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: tviwiinvkappros
+          http_method: GET
+          request_headers:
+            Accept: '*/*'
+          request_parameters:
+            filter: clientid eq '{{ stream_partition['clientIds'] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: clientIds
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/project'
+    division:
+      type: DeclarativeStream
+      name: division
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: tviwiinvkapfes
+          http_method: GET
+          request_headers:
+            Accepts: '*/*'
+          request_parameters:
+            filter: clientid eq '{{ stream_partition['clientIds'] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: clientIds
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/division'
+    department:
+      type: DeclarativeStream
+      name: department
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: tviwiinvkapavds
+          http_method: GET
+          request_headers:
+            Accept: '*/*'
+          request_parameters:
+            filter: clientid eq '{{ stream_partition['clientIds'] }}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+        partition_router:
+          - type: ListPartitionRouter
+            values:
+              - '45'
+              - '70'
+            cursor_field: clientIds
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/department'
+  base_requester:
+    type: HttpRequester
+    url_base: https://web-api.tellitportal.no/NRC-api/v1/objects/
+    authenticator:
+      type: BasicHttpAuthenticator
+      password: '{{ config[''password''] }}'
+      username: '{{ config[''username''] }}'
+
+streams:
+  - $ref: '#/definitions/streams/project'
+  - $ref: '#/definitions/streams/department'
+  - $ref: '#/definitions/streams/division'
+  - $ref: '#/definitions/streams/company'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - username
+    properties:
+      password:
+        type: string
+        order: 1
+        title: Password
+        always_show: true
+        airbyte_secret: true
+      username:
+        type: string
+        order: 0
+        title: Username
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    company: false
+    project: false
+    division: false
+    department: false
+
+schemas:
+  company:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      vo:
+        type:
+          - string
+          - 'null'
+      foeht:
+        type:
+          - string
+          - 'null'
+      period:
+        type:
+          - number
+          - 'null'
+      project:
+        type:
+          - string
+          - 'null'
+      clientid:
+        type:
+          - string
+          - 'null'
+      amountAcc:
+        type:
+          - number
+          - 'null'
+      department:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  project:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      vo:
+        type:
+          - string
+          - 'null'
+      foeht:
+        type:
+          - string
+          - 'null'
+      period:
+        type:
+          - number
+          - 'null'
+      project:
+        type:
+          - string
+          - 'null'
+      clientid:
+        type:
+          - string
+          - 'null'
+      amountAcc:
+        type:
+          - number
+          - 'null'
+      department:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  division:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      vo:
+        type:
+          - string
+          - 'null'
+      foeht:
+        type:
+          - string
+          - 'null'
+      period:
+        type:
+          - number
+          - 'null'
+      project:
+        type:
+          - string
+          - 'null'
+      clientid:
+        type:
+          - string
+          - 'null'
+      amountAcc:
+        type:
+          - number
+          - 'null'
+      department:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  department:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      vo:
+        type:
+          - string
+          - 'null'
+      foeht:
+        type:
+          - string
+          - 'null'
+      period:
+        type:
+          - number
+          - 'null'
+      project:
+        type:
+          - string
+          - 'null'
+      clientid:
+        type:
+          - string
+          - 'null'
+      amountAcc:
+        type:
+          - number
+          - 'null'
+      department:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true

@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+- Ensure we use C# 9.x+ standards when coding and follow the industry standards and best practices.
+- Ensure we use dontnet cli for all solution/project management related activities

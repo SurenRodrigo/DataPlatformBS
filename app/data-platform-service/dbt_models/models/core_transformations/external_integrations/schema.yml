@@ -1,0 +1,63 @@
+version: 1
+
+models:
+  - name: company_data_source_seed_public
+    description: "Public schema copy of the company_data_source_seed seed for GraphQL/Hasura consumption."
+    columns:
+      - name: id
+        description: "Primary key from the seed entry."
+        dbt_tests:
+          - not_null
+      - name: company_guid
+        description: "GUID of the company as defined in the seed source."
+      - name: tenant_id
+        description: "Tenant identifier associated with the company."
+      - name: data_source_id
+        description: "Identifier of the upstream data source."
+      - name: ext_company_id
+        description: "External company identifier used by integrators."
+
+  - name: nrc_ditio_project_public
+    description: "Public schema exposure of Ditio projects (from int__nrc_ditio_project) for GraphQL access."
+    columns:
+      - name: id
+        description: "Surrogate primary key for the Ditio project record."
+        dbt_tests:
+          - unique
+          - not_null
+      - name: tenant_id
+        description: "Tenant identifier associated with the project."
+      - name: tenant_name
+        description: "Tenant name."
+      - name: company_id
+        description: "Internal company GUID (app platform)."
+      - name: ext_company_id
+        description: "External company ID as known by Ditio."
+      - name: company_name
+        description: "Company name."
+      - name: ext_project_id
+        description: "External project ID (project number)."
+      - name: project_name
+        description: "Project name."
+      - name: project_number
+        description: "Project number reference."
+      - name: project_identifier
+        description: "Combined project number and name."
+      - name: ext_project_guid
+        description: "External Ditio project GUID."
+      - name: external_number
+        description: "Additional external number reference."
+
+  - name: nrc_endre_project
+    description: "Public schema exposure of Endre projects (from int__nrc_endre_project) for GraphQL access."
+    columns:
+      - name: project_name
+        description: "Project name."
+      - name: project_number
+        description: "External project number."
+      - name: project_id
+        description: "Endre external project id."
+      - name: organization_id
+        description: "Endre External organization identifier."
+      - name: is_active
+        description: "Whether the project is active."

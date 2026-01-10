@@ -1,0 +1,22 @@
+SELECT
+    {{ dbt_utils.generate_surrogate_key(['"internal_id"']) }}   AS work_order_id,
+    customer_id,
+    2                                                           AS tenant_id,
+    'Gunnar Knutsen'                                            AS tenant_name,
+    6                                                           AS data_source_id,
+    'Admmit'                                                    AS data_source_name,
+    project_id,
+    employee_id,
+    internal_id                                                 AS ext_work_order_id,
+    vehicle_id,
+    hanger_id,
+    order_id,
+    date,
+    description,
+    order_no                                                    AS order_number,
+    time_from,
+    time_to,
+    is_deleted,
+    created_on                                                  AS created_date,
+    modified_on                                                 AS modified_date
+FROM {{ ref('stg__admmit_work_order') }}

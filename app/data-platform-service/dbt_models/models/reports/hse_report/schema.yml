@@ -1,0 +1,42 @@
+version: 3
+sources:
+  - name: public
+    schema: public
+    tables:
+      - name: case
+      - name: case_kpi
+
+models:
+  - name: h1_h2_incidents
+    schema: public_reporting
+    description: "Stores information for h1 h2 dashboard"
+    columns:
+      - name: year_occurred
+        description: "Year"
+        tests:
+          - not_null
+
+      - name: month_occurred
+        description: "month"
+        tests:
+          - not_null
+
+      - name: division_id
+        description: "Division ID"
+        tests:
+          - not_null
+
+      - name: department_id
+        description: "department id"
+
+      - name: division_name
+        description: "name of the division"
+
+      - name: h1_incident_count
+        description: "h1 count"
+
+      - name: h2_incident_count
+        description: "h2 count"
+
+      - name: total
+        description: "sum of h1 h2"

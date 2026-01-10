@@ -1,0 +1,1961 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - project
+
+definitions:
+  streams:
+    project:
+      type: DeclarativeStream
+      name: project
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_token_option:
+            type: RequestOption
+            field_name: ContinuationToken
+            inject_into: request_parameter
+          pagination_strategy:
+            type: CursorPagination
+            cursor_value: '{{ response.get("continuationToken", {}) }}'
+            stop_condition: '{{ not response.get("continuationToken", {}) }}'
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: project
+          http_method: GET
+          request_headers:
+            Accept: text/plain
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      primary_key:
+        - id
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/project'
+    resource:
+      type: DeclarativeStream
+      name: resource
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_token_option:
+            type: RequestOption
+            field_name: ContinuationToken
+            inject_into: request_parameter
+          pagination_strategy:
+            type: CursorPagination
+            cursor_value: '{{ response.get("continuationToken", {}) }}'
+            stop_condition: '{{ not response.get("continuationToken", {}) }}'
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: resource
+          http_method: GET
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      primary_key:
+        - id
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/resource'
+    payroll_lines:
+      type: DeclarativeStream
+      name: payroll_lines
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: payroll-lines
+          http_method: GET
+          request_parameters:
+            FromDateTime: '2025-01-01'
+            IncludeAllAbsence: 'true'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      primary_key:
+        - id
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/payroll_lines'
+    time_registrations:
+      type: DeclarativeStream
+      name: time_registrations
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_token_option:
+            type: RequestOption
+            field_name: ContinuationToken
+            inject_into: request_parameter
+          pagination_strategy:
+            type: CursorPagination
+            cursor_value: '{{ response.get("continuationToken", {}) }}'
+            stop_condition: '{{ not response.get("continuationToken", {}) }}'
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: time-registrations
+          http_method: GET
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      primary_key:
+        - id
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/time_registrations'
+    absence_registrations:
+      type: DeclarativeStream
+      name: absence_registrations
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_token_option:
+            type: RequestOption
+            field_name: ContinuationToken
+            inject_into: request_parameter
+          pagination_strategy:
+            type: CursorPagination
+            cursor_value: '{{ response.get("continuationToken", {}) }}'
+            stop_condition: '{{ not response.get("continuationToken", {}) }}'
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: absence-registrations
+          http_method: GET
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      primary_key:
+        - id
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/absence_registrations'
+    incidents_registration:
+      type: DeclarativeStream
+      name: incidents_registration
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: incident-registrations
+          http_method: GET
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/incidents_registration'
+    work_breakdown_structure:
+      type: DeclarativeStream
+      name: work_breakdown_structure
+      retriever:
+        type: SimpleRetriever
+        paginator:
+          type: DefaultPaginator
+          page_token_option:
+            type: RequestOption
+            field_name: ContinuationToken
+            inject_into: request_parameter
+          pagination_strategy:
+            type: CursorPagination
+            cursor_value: '{{ response.get("continuationToken", {}) }}'
+            stop_condition: '{{ not response.get("continuationToken", {}) }}'
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: project/work-breakdown-structure
+          http_method: GET
+          request_parameters:
+            ProjectId: '{{ stream_partition.project}}'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+        partition_router:
+          - type: SubstreamPartitionRouter
+            parent_stream_configs:
+              - type: ParentStreamConfig
+                stream:
+                  $ref: '#/definitions/streams/project'
+                parent_key: id
+                partition_field: project
+      primary_key:
+        - id
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/work_breakdown_structure'
+      transformations:
+        - type: AddFields
+          fields:
+            - path:
+                - projectId
+              value: '{{ stream_partition.project }}'
+  base_requester:
+    type: HttpRequester
+    url_base: https://core-api.ditio.dev/reporting/v1
+    authenticator:
+      type: OAuthAuthenticator
+      client_id: '{{ config[''client_id''] }}'
+      grant_type: client_credentials
+      client_secret: '{{ config[''client_secret''] }}'
+      refresh_request_body: {}
+      token_refresh_endpoint: https://ditio-ids-we-test.azurewebsites.net/connect/token
+
+streams:
+  - $ref: '#/definitions/streams/project'
+  - $ref: '#/definitions/streams/work_breakdown_structure'
+  - $ref: '#/definitions/streams/time_registrations'
+  - $ref: '#/definitions/streams/absence_registrations'
+  - $ref: '#/definitions/streams/resource'
+  - $ref: '#/definitions/streams/payroll_lines'
+  - $ref: '#/definitions/streams/incidents_registration'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - client_id
+      - client_secret
+    properties:
+      client_id:
+        type: string
+        order: 0
+        title: Client ID
+        airbyte_secret: true
+      client_secret:
+        type: string
+        order: 1
+        title: Client secret
+        airbyte_secret: true
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    project: false
+    resource: true
+    payroll_lines: true
+    time_registrations: false
+    absence_registrations: false
+    incidents_registration: true
+    work_breakdown_structure: false
+
+schemas:
+  project:
+    type: object
+    $schema: http://json-schema.org/schema#
+    required:
+      - id
+    properties:
+      id:
+        type: string
+      name:
+        type:
+          - string
+          - 'null'
+      number:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      createdBy:
+        type:
+          - string
+          - 'null'
+      deletedBy:
+        type:
+          - string
+          - 'null'
+      isDeleted:
+        type:
+          - boolean
+          - 'null'
+      isExternal:
+        type:
+          - boolean
+          - 'null'
+      modifiedBy:
+        type:
+          - string
+          - 'null'
+      companyData:
+        type:
+          - array
+          - 'null'
+      companyName:
+        type:
+          - string
+          - 'null'
+      externalDim01:
+        type:
+          - string
+          - 'null'
+      externalDim02:
+        type:
+          - string
+          - 'null'
+      externalNumber:
+        type:
+          - string
+          - 'null'
+      createdDateTime:
+        type:
+          - string
+          - 'null'
+      deletedDateTime:
+        type:
+          - string
+          - 'null'
+      modifiedDateTime:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  resource:
+    type: object
+    $schema: http://json-schema.org/schema#
+    required:
+      - id
+    properties:
+      id:
+        type: string
+      name:
+        type:
+          - string
+          - 'null'
+      active:
+        type:
+          - boolean
+          - 'null'
+      number:
+        type:
+          - string
+          - 'null'
+      typeId:
+        type:
+          - string
+          - 'null'
+      weight:
+        type:
+          - number
+          - 'null'
+      capacity:
+        type:
+          - number
+          - 'null'
+      typeName:
+        type:
+          - string
+          - 'null'
+      buildYear:
+        type:
+          - number
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      createdBy:
+        type:
+          - string
+          - 'null'
+      hourMeter:
+        type:
+          - number
+          - 'null'
+      isDeleted:
+        type:
+          - boolean
+          - 'null'
+      isExternal:
+        type:
+          - boolean
+          - 'null'
+      modifiedBy:
+        type:
+          - string
+          - 'null'
+      companyName:
+        type:
+          - string
+          - 'null'
+      serviceDate:
+        type:
+          - string
+          - 'null'
+      engineNumber:
+        type:
+          - string
+          - 'null'
+      serialNumber:
+        type:
+          - string
+          - 'null'
+      typeBaseName:
+        type:
+          - string
+          - 'null'
+      emissionClass:
+        type:
+          - string
+          - 'null'
+      purchasedDate:
+        type:
+          - string
+          - 'null'
+      createdDateTime:
+        type:
+          - string
+          - 'null'
+      deletedDateTime:
+        type:
+          - string
+          - 'null'
+      modifiedDateTime:
+        type:
+          - string
+          - 'null'
+      registrationNumber:
+        type:
+          - string
+          - 'null'
+      fuelConsumptionRate:
+        type:
+          - number
+          - 'null'
+      fuelConsumptionUnit:
+        type:
+          - number
+          - 'null'
+    additionalProperties: true
+  payroll_lines:
+    type: object
+    $schema: http://json-schema.org/schema#
+    required:
+      - id
+    properties:
+      id:
+        type: string
+      approved:
+        type:
+          - boolean
+          - 'null'
+      userName:
+        type:
+          - string
+          - 'null'
+      verified:
+        type:
+          - boolean
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      isDeleted:
+        type:
+          - boolean
+          - 'null'
+      modifiedBy:
+        type:
+          - string
+          - 'null'
+      stopDateTime:
+        type:
+          - string
+          - 'null'
+      startDateTime:
+        type:
+          - string
+          - 'null'
+      transDateTime:
+        type:
+          - string
+          - 'null'
+      employeeNumber:
+        type:
+          - string
+          - 'null'
+      deletedDateTime:
+        type:
+          - string
+          - 'null'
+      approvedDateTime:
+        type:
+          - string
+          - 'null'
+      modifiedDateTime:
+        type:
+          - string
+          - 'null'
+      verifiedDateTime:
+        type:
+          - string
+          - 'null'
+      payrollValuesAsExportLines:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type:
+                - string
+                - 'null'
+            qty:
+              type:
+                - number
+                - 'null'
+            rate:
+              type:
+                - number
+                - 'null'
+            projId:
+              type:
+                - string
+                - 'null'
+            typeId:
+              type:
+                - string
+                - 'null'
+            lineType:
+              type:
+                - number
+                - 'null'
+            typeName:
+              type:
+                - string
+                - 'null'
+            taskNumber:
+              type:
+                - string
+                - 'null'
+            pieceWorkId:
+              type:
+                - string
+                - 'null'
+            projectName:
+              type:
+                - string
+                - 'null'
+            lineTypeName:
+              type:
+                - string
+                - 'null'
+            absenceOrigin:
+              type:
+                - boolean
+                - 'null'
+            projectNumber:
+              type:
+                - string
+                - 'null'
+            productionCode:
+              type:
+                - string
+                - 'null'
+            externalSubProjectNumber:
+              type:
+                - string
+                - 'null'
+    additionalProperties: true
+  time_registrations:
+    type: object
+    $schema: http://json-schema.org/schema#
+    required:
+      - id
+    properties:
+      id:
+        type: string
+      qty:
+        type:
+          - number
+          - 'null'
+      price:
+        type:
+          - number
+          - 'null'
+      amount:
+        type:
+          - number
+          - 'null'
+      locked:
+        type:
+          - boolean
+          - 'null'
+      taskId:
+        type:
+          - string
+          - 'null'
+      userId:
+        type:
+          - string
+          - 'null'
+      unitQty:
+        type:
+          - number
+          - 'null'
+      approved:
+        type:
+          - boolean
+          - 'null'
+      breakQty:
+        type:
+          - number
+          - 'null'
+      invoiced:
+        type:
+          - boolean
+          - 'null'
+      taskName:
+        type:
+          - string
+          - 'null'
+      unitName:
+        type:
+          - string
+          - 'null'
+      userName:
+        type:
+          - string
+          - 'null'
+      workDate:
+        type:
+          - string
+          - 'null'
+      isDeleted:
+        type:
+          - boolean
+          - 'null'
+      projectId:
+        type:
+          - string
+          - 'null'
+      unitPrice:
+        type:
+          - number
+          - 'null'
+      costAmount:
+        type:
+          - number
+          - 'null'
+      equipments:
+        type:
+          - array
+          - 'null'
+      resourceId:
+        type:
+          - string
+          - 'null'
+      description:
+        type:
+          - string
+          - 'null'
+      projectName:
+        type:
+          - string
+          - 'null'
+      costPriceMan:
+        type:
+          - number
+          - 'null'
+      equipmentIds:
+        type:
+          - array
+          - 'null'
+      lunchSkipped:
+        type:
+          - boolean
+          - 'null'
+      resourceName:
+        type:
+          - string
+          - 'null'
+      stopDateTime:
+        type:
+          - string
+          - 'null'
+      taskNameLong:
+        type:
+          - string
+          - 'null'
+      costAmountMan:
+        type:
+          - number
+          - 'null'
+      costPriceBase:
+        type:
+          - number
+          - 'null'
+      dinnerSkipped:
+        type:
+          - boolean
+          - 'null'
+      projectNumber:
+        type:
+          - string
+          - 'null'
+      startDateTime:
+        type:
+          - string
+          - 'null'
+      taskChapterId:
+        type:
+          - string
+          - 'null'
+      taskWbsNumber:
+        type:
+          - string
+          - 'null'
+      userBirthDate:
+        type:
+          - string
+          - 'null'
+      userCompanyId:
+        type:
+          - string
+          - 'null'
+      userWorkTitle:
+        type:
+          - string
+          - 'null'
+      approvedByName:
+        type:
+          - string
+          - 'null'
+      breakUnplanned:
+        type:
+          - number
+          - 'null'
+      lockedDateTime:
+        type:
+          - string
+          - 'null'
+      resourceNumber:
+        type:
+          - string
+          - 'null'
+      createdDateTime:
+        type:
+          - string
+          - 'null'
+      lunchSubtracted:
+        type:
+          - boolean
+          - 'null'
+      payrollApproved:
+        type:
+          - boolean
+          - 'null'
+      taskPieceWorkId:
+        type:
+          - string
+          - 'null'
+      userCompanyName:
+        type:
+          - string
+          - 'null'
+      approvedDateTime:
+        type:
+          - string
+          - 'null'
+      costPriceMachine:
+        type:
+          - number
+          - 'null'
+      dinnerSubtracted:
+        type:
+          - boolean
+          - 'null'
+      modifiedDateTime:
+        type:
+          - string
+          - 'null'
+      projectCompanyId:
+        type:
+          - string
+          - 'null'
+      resourceNameLong:
+        type:
+          - string
+          - 'null'
+      resourceTypeName:
+        type:
+          - string
+          - 'null'
+      userCompanyOrgNr:
+        type:
+          - string
+          - 'null'
+      costAmountMachine:
+        type:
+          - number
+          - 'null'
+      taskExternalDim01:
+        type:
+          - string
+          - 'null'
+      projectCompanyName:
+        type:
+          - string
+          - 'null'
+      userEmployeeNumber:
+        type:
+          - string
+          - 'null'
+      descriptionInternal:
+        type:
+          - string
+          - 'null'
+      primaryResourceName:
+        type:
+          - string
+          - 'null'
+      machineEmissionClass:
+        type:
+          - string
+          - 'null'
+      projectExternalDim01:
+        type:
+          - string
+          - 'null'
+      projectExternalDim02:
+        type:
+          - string
+          - 'null'
+      companySpecificAmounts:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            price:
+              type:
+                - number
+                - 'null'
+            amount:
+              type:
+                - number
+                - 'null'
+            companyId:
+              type:
+                - string
+                - 'null'
+            priceDate:
+              type:
+                - string
+                - 'null'
+            unitPrice:
+              type:
+                - number
+                - 'null'
+            costAmount:
+              type:
+                - number
+                - 'null'
+            costPriceMan:
+              type:
+                - number
+                - 'null'
+            costAmountMan:
+              type:
+                - number
+                - 'null'
+            costPriceBase:
+              type:
+                - number
+                - 'null'
+            unitCostPrice:
+              type:
+                - number
+                - 'null'
+            hierarchyLevel:
+              type:
+                - number
+                - 'null'
+            overtimeDetails:
+              type:
+                - array
+                - 'null'
+            costPriceMachine:
+              type:
+                - number
+                - 'null'
+            costAmountMachine:
+              type:
+                - number
+                - 'null'
+      userWorkShiftSettingId:
+        type:
+          - string
+          - 'null'
+      payrollApprovedDateTime:
+        type:
+          - string
+          - 'null'
+      userWorkShiftSettingName:
+        type:
+          - string
+          - 'null'
+      machineRegistrationNumber:
+        type:
+          - string
+          - 'null'
+      userCompanyProjectExternalDim01:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  absence_registrations:
+    type: object
+    $schema: http://json-schema.org/schema#
+    required:
+      - id
+    properties:
+      id:
+        type: string
+      qty:
+        type:
+          - number
+          - 'null'
+      date:
+        type:
+          - string
+          - 'null'
+      locked:
+        type:
+          - boolean
+          - 'null'
+      userId:
+        type:
+          - string
+          - 'null'
+      approved:
+        type:
+          - boolean
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      createdAt:
+        type:
+          - string
+          - 'null'
+      isDeleted:
+        type:
+          - boolean
+          - 'null'
+      manualQty:
+        type:
+          - boolean
+          - 'null'
+      projectId:
+        type:
+          - string
+          - 'null'
+      startTime:
+        type:
+          - string
+          - 'null'
+      companyIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      modifiedAt:
+        type:
+          - string
+          - 'null'
+      recVersion:
+        type:
+          - number
+          - 'null'
+      absenceTypeId:
+        type:
+          - string
+          - 'null'
+      approvedByName:
+        type:
+          - string
+          - 'null'
+      employeeNumber:
+        type:
+          - string
+          - 'null'
+      lockedDateTime:
+        type:
+          - string
+          - 'null'
+      registrationId:
+        type:
+          - string
+          - 'null'
+      absenceTypeCode:
+        type:
+          - string
+          - 'null'
+      absenceTypeName:
+        type:
+          - string
+          - 'null'
+      createdByUserId:
+        type:
+          - string
+          - 'null'
+      payrollApproved:
+        type:
+          - boolean
+          - 'null'
+      approvedDateTime:
+        type:
+          - string
+          - 'null'
+      modifiedByUserId:
+        type:
+          - string
+          - 'null'
+      modifiedDateTime:
+        type:
+          - string
+          - 'null'
+      payrollSummaryId:
+        type:
+          - string
+          - 'null'
+      projectCompanyId:
+        type:
+          - string
+          - 'null'
+      isPayrollExportAbsence:
+        type:
+          - boolean
+          - 'null'
+      payrollApprovedDateTime:
+        type:
+          - string
+          - 'null'
+      registrationSickLeaveReason:
+        type:
+          - number
+          - 'null'
+      registrationBirthDateOfChild:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  incidents_registration:
+    type: object
+    $schema: http://json-schema.org/schema#
+    required:
+      - taskNumber
+    properties:
+      id:
+        type:
+          - string
+          - 'null'
+      risk:
+        type:
+          - number
+          - 'null'
+      costs:
+        type:
+          - number
+          - 'null'
+      title:
+        type:
+          - string
+          - 'null'
+      typeExternalNumber:
+        type:
+          - string
+          - 'null'
+      causes:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type:
+                - string
+                - 'null'
+            name:
+              type:
+                - string
+                - 'null'
+      sentTo:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      status:
+        type:
+          - number
+          - 'null'
+      taskId:
+        type:
+          - string
+          - 'null'
+      company:
+        type:
+          - object
+          - 'null'
+        properties:
+          id:
+            type:
+              - string
+              - 'null'
+          name:
+            type:
+              - string
+              - 'null'
+          orgNr:
+            type:
+              - string
+              - 'null'
+          address:
+            type:
+              - string
+              - 'null'
+          avatarSrc:
+            type:
+              - string
+              - 'null'
+          companyId:
+            type:
+              - string
+              - 'null'
+          timeZoneId:
+            type:
+              - string
+              - 'null'
+          countryCode:
+            type:
+              - string
+              - 'null'
+          logoImageFileRef57:
+            type:
+              - string
+              - 'null'
+          logoImageFileRef72:
+            type:
+              - string
+              - 'null'
+          logoImageFileRef114:
+            type:
+              - string
+              - 'null'
+          logoImageFileRef144:
+            type:
+              - string
+              - 'null'
+          logoImageFileRefOrig:
+            type:
+              - string
+              - 'null'
+      fileIds:
+        type:
+          - array
+          - 'null'
+      history:
+        type:
+          - array
+          - 'null'
+      accuracy:
+        type:
+          - number
+          - 'null'
+      baseType:
+        type:
+          - number
+          - 'null'
+      causeIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      imageIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      latitude:
+        type:
+          - number
+          - 'null'
+      measures:
+        type:
+          - string
+          - 'null'
+      riskText:
+        type:
+          - string
+          - 'null'
+      showRisk:
+        type:
+          - boolean
+          - 'null'
+      taskName:
+        type:
+          - string
+          - 'null'
+      typeName:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      createdAt:
+        type:
+          - string
+          - 'null'
+      createdBy:
+        type:
+          - object
+          - 'null'
+        properties:
+          id:
+            type:
+              - string
+              - 'null'
+          name:
+            type:
+              - string
+              - 'null'
+          companyId:
+            type:
+              - string
+              - 'null'
+          companyName:
+            type:
+              - string
+              - 'null'
+          mobilePhone:
+            type:
+              - string
+              - 'null'
+          avatarImageId:
+            type:
+              - string
+              - 'null'
+          employeeNumber:
+            type:
+              - string
+              - 'null'
+          companyOrgNumber:
+            type:
+              - string
+              - 'null'
+      isDeleted:
+        type:
+          - boolean
+          - 'null'
+      longitude:
+        type:
+          - number
+          - 'null'
+      projectId:
+        type:
+          - string
+          - 'null'
+      relatedTo:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type:
+                - string
+                - 'null'
+            name:
+              type:
+                - string
+                - 'null'
+      assignedTo:
+        type:
+          - object
+          - 'null'
+        properties:
+          id:
+            type:
+              - string
+              - 'null'
+          name:
+            type:
+              - string
+              - 'null'
+          companyId:
+            type:
+              - string
+              - 'null'
+          companyName:
+            type:
+              - string
+              - 'null'
+          mobilePhone:
+            type:
+              - string
+              - 'null'
+          avatarImageId:
+            type:
+              - string
+              - 'null'
+          employeeNumber:
+            type:
+              - string
+              - 'null'
+          companyOrgNumber:
+            type:
+              - string
+              - 'null'
+      categories:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type:
+                - string
+                - 'null'
+            name:
+              type:
+                - string
+                - 'null'
+      companyIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      damageType:
+        type:
+          - number
+          - 'null'
+      exportable:
+        type:
+          - boolean
+          - 'null'
+      externalId:
+        type:
+          - string
+          - 'null'
+      modifiedAt:
+        type:
+          - string
+          - 'null'
+      recVersion:
+        type:
+          - number
+          - 'null'
+      statusText:
+        type:
+          - string
+          - 'null'
+      taskNumber:
+        type: string
+      absenceDays:
+        type:
+          - number
+          - 'null'
+      absenceType:
+        type:
+          - number
+          - 'null'
+      categoryIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      companyName:
+        type:
+          - string
+          - 'null'
+      description:
+        type:
+          - string
+          - 'null'
+      projectName:
+        type:
+          - string
+          - 'null'
+      assignedToId:
+        type:
+          - string
+          - 'null'
+      baseTypeText:
+        type:
+          - string
+          - 'null'
+      hmsRegTypeId:
+        type:
+          - string
+          - 'null'
+      relatedToIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      serialNumber:
+        type:
+          - string
+          - 'null'
+      externalDim01:
+        type:
+          - string
+          - 'null'
+      locationPoint:
+        type:
+          - object
+          - 'null'
+        properties:
+          type:
+            type:
+              - string
+              - 'null'
+          accuracy:
+            type:
+              - number
+              - 'null'
+          coordinates:
+            type:
+              - array
+              - 'null'
+            items:
+              type:
+                - number
+                - 'null'
+          isValidPoint:
+            type:
+              - boolean
+              - 'null'
+      projectNumber:
+        type:
+          - string
+          - 'null'
+      damageTypeText:
+        type:
+          - string
+          - 'null'
+      showDamageInfo:
+        type:
+          - boolean
+          - 'null'
+      commentInternal:
+        type:
+          - string
+          - 'null'
+      createdByUserId:
+        type:
+          - string
+          - 'null'
+      involvedParties:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type:
+                - string
+                - 'null'
+            name:
+              type:
+                - string
+                - 'null'
+      statusUpdatedAt:
+        type:
+          - string
+          - 'null'
+      statusUpdatedBy:
+        type:
+          - object
+          - 'null'
+        properties:
+          id:
+            type:
+              - string
+              - 'null'
+          name:
+            type:
+              - string
+              - 'null'
+          companyId:
+            type:
+              - string
+              - 'null'
+          companyName:
+            type:
+              - string
+              - 'null'
+          mobilePhone:
+            type:
+              - string
+              - 'null'
+          avatarImageId:
+            type:
+              - string
+              - 'null'
+          employeeNumber:
+            type:
+              - string
+              - 'null'
+          companyOrgNumber:
+            type:
+              - string
+              - 'null'
+      customCategories:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type:
+                - string
+                - 'null'
+            name:
+              type:
+                - string
+                - 'null'
+      modifiedByUserId:
+        type:
+          - string
+          - 'null'
+      modifiedDateTime:
+        type:
+          - string
+          - 'null'
+      projectCompanyId:
+        type:
+          - string
+          - 'null'
+      customCategoryIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      involvedCompanies:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type:
+                - string
+                - 'null'
+            name:
+              type:
+                - string
+                - 'null'
+            orgNr:
+              type:
+                - string
+                - 'null'
+            address:
+              type:
+                - string
+                - 'null'
+            avatarSrc:
+              type:
+                - string
+                - 'null'
+            companyId:
+              type:
+                - string
+                - 'null'
+            timeZoneId:
+              type:
+                - string
+                - 'null'
+            countryCode:
+              type:
+                - string
+                - 'null'
+            phoneNumber:
+              type:
+                - string
+                - 'null'
+            contactPerson:
+              type:
+                - string
+                - 'null'
+            logoImageFileRef57:
+              type:
+                - string
+                - 'null'
+            logoImageFileRef72:
+              type:
+                - string
+                - 'null'
+            logoImageFileRef114:
+              type:
+                - string
+                - 'null'
+            logoImageFileRef144:
+              type:
+                - string
+                - 'null'
+            logoImageFileRefOrig:
+              type:
+                - string
+                - 'null'
+      involvedResources:
+        type:
+          - string
+          - 'null'
+      motherCompanyName:
+        type:
+          - string
+          - 'null'
+      externalTaskNumber:
+        type:
+          - string
+          - 'null'
+      fileFileReferences:
+        type:
+          - array
+          - 'null'
+      involvedCompanyIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      involvedPartiesIds:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - string
+            - 'null'
+      pdfFileReferenceId:
+        type:
+          - string
+          - 'null'
+      projectCompanyName:
+        type:
+          - string
+          - 'null'
+      resolvedOnLocation:
+        type:
+          - boolean
+          - 'null'
+      serialNumberPrefix:
+        type:
+          - string
+          - 'null'
+      imageFileReferences:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type:
+                - string
+                - 'null'
+            idRef:
+              type:
+                - string
+                - 'null'
+            isSvg:
+              type:
+                - boolean
+                - 'null'
+            isImage:
+              type:
+                - boolean
+                - 'null'
+            fileName:
+              type:
+                - string
+                - 'null'
+            fileSize:
+              type:
+                - number
+                - 'null'
+            fileType:
+              type:
+                - string
+                - 'null'
+            companyId:
+              type:
+                - string
+                - 'null'
+            createdBy:
+              type:
+                - string
+                - 'null'
+            syncState:
+              type:
+                - number
+                - 'null'
+            companyIds:
+              type:
+                - array
+                - 'null'
+              items:
+                type:
+                  - string
+                  - 'null'
+            recVersion:
+              type:
+                - number
+                - 'null'
+            fileNameOrig:
+              type:
+                - string
+                - 'null'
+            collectionRef:
+              type:
+                - string
+                - 'null'
+            geoCoordinate:
+              type:
+                - object
+                - 'null'
+              properties:
+                accuracy:
+                  type:
+                    - number
+                    - 'null'
+                latitude:
+                  type:
+                    - number
+                    - 'null'
+                longitude:
+                  type:
+                    - number
+                    - 'null'
+            createdDateTime:
+              type:
+                - string
+                - 'null'
+            secondaryIdRefs:
+              type:
+                - array
+                - 'null'
+            userSecurityLevel:
+              type:
+                - number
+                - 'null'
+      requiresFurtherAction:
+        type:
+          - boolean
+          - 'null'
+      statusUpdatedByUserId:
+        type:
+          - string
+          - 'null'
+      currentUserAccessLevel:
+        type:
+          - number
+          - 'null'
+      serialNumberWithPrefix:
+        type:
+          - string
+          - 'null'
+      hmsRegIntegrationEnabled:
+        type:
+          - boolean
+          - 'null'
+      hmsRegTypeSetOnAlertType:
+        type:
+          - boolean
+          - 'null'
+      readyForExportToExternal:
+        type:
+          - boolean
+          - 'null'
+      projectNotificationTypeId:
+        type:
+          - string
+          - 'null'
+      currentUserAccessLevelText:
+        type:
+          - string
+          - 'null'
+      customCategoryPropertyName:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true
+  work_breakdown_structure:
+    type: object
+    $schema: http://json-schema.org/schema#
+    required:
+      - id
+    properties:
+      id:
+        type: string
+      name:
+        type:
+          - string
+          - 'null'
+      chapterId:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      createdBy:
+        type:
+          - string
+          - 'null'
+      deletedBy:
+        type:
+          - string
+          - 'null'
+      isDeleted:
+        type:
+          - boolean
+          - 'null'
+      projectId:
+        type:
+          - string
+          - 'null'
+      isExternal:
+        type:
+          - boolean
+          - 'null'
+      modifiedBy:
+        type:
+          - string
+          - 'null'
+      parentName:
+        type:
+          - string
+          - 'null'
+      companyName:
+        type:
+          - string
+          - 'null'
+      fullPathName:
+        type:
+          - string
+          - 'null'
+      externalNumber:
+        type:
+          - string
+          - 'null'
+      folderPathName:
+        type:
+          - string
+          - 'null'
+      nameWithNumber:
+        type:
+          - string
+          - 'null'
+      createdDateTime:
+        type:
+          - string
+          - 'null'
+      deletedDateTime:
+        type:
+          - string
+          - 'null'
+      modifiedDateTime:
+        type:
+          - string
+          - 'null'
+    additionalProperties: true

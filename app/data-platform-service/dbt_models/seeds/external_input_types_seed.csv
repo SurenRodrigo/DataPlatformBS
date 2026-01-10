@@ -1,0 +1,10 @@
+ExternalInputTypeID,TenantID,InputName,Description,isActive
+1,1,NUM_HRS_RENTED_WORKERS,No. hrs rented workers,TRUE
+2,1,NUM_HRS_SUBCONTRACTOR,No. hrs worked subcontractor,TRUE
+3,1,NUM_OPEN_ROLES_RECRUITMENT,No. of Open Roles for Recruitment,TRUE
+4,1,NUM_ABSENCE_DAYS_PERSONAL_INJURY,No. of absence days due to personal injury,TRUE
+5,1,NUM_DELIVERED_TONS_RESIDUAL_WASTE,No. of delivered tons of residual waste,TRUE
+6,1,TOTAL_AMOUNT_DELIVERED_WASTE,Total amount of delivered waste (including residual waste),TRUE
+7,1,RENTED_PERSONAL_COUNT,Number of rented personnel count,TRUE
+8,1,NUM_HRS_RENTED_WORKERS_HSE,No. hrs rented workers HSE,TRUE
+9,1,NUM_HRS_SUBCONTRACTOR_HSE,No. hrs worked subcontractor HSE,TRUE

@@ -1,0 +1,857 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - paid_transaction
+
+definitions:
+  streams:
+    paid_transaction:
+      type: DeclarativeStream
+      name: paid_transaction
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: /v1/objects/customer-transactions
+          http_method: GET
+          request_parameters:
+            matchedCustomerInvoices: 'true'
+            unmatchedCustomerInvoices: 'false'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/paid_transaction'
+    unpaid_transaction:
+      type: DeclarativeStream
+      name: unpaid_transaction
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: /v1/objects/customer-transactions
+          http_method: GET
+          request_parameters:
+            matchedCustomerInvoices: 'false'
+            unmatchedCustomerInvoices: 'true'
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/unpaid_transaction'
+  base_requester:
+    type: HttpRequester
+    url_base: https://web-api.tellitportal.no/NRC-api
+    authenticator:
+      type: BasicHttpAuthenticator
+      password: '{{ config[''password''] }}'
+      username: '{{ config[''username''] }}'
+
+streams:
+  - $ref: '#/definitions/streams/paid_transaction'
+  - $ref: '#/definitions/streams/unpaid_transaction'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required:
+      - username
+    properties:
+      password:
+        type: string
+        order: 1
+        title: Password
+        always_show: true
+        airbyte_secret: true
+      username:
+        type: string
+        order: 0
+        title: Username
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    paid_transaction: true
+    unpaid_transaction: true
+
+schemas:
+  paid_transaction:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      period:
+        type:
+          - number
+          - 'null'
+      amounts:
+        type:
+          - object
+          - 'null'
+        properties:
+          amount:
+            type:
+              - number
+              - 'null'
+          amount3:
+            type:
+              - number
+              - 'null'
+          amount4:
+            type:
+              - number
+              - 'null'
+          amountPaid:
+            type:
+              - number
+              - 'null'
+          restAmount3:
+            type:
+              - number
+              - 'null'
+          restAmount4:
+            type:
+              - number
+              - 'null'
+          currencyCode:
+            type:
+              - string
+              - 'null'
+          exchangeRate:
+            type:
+              - number
+              - 'null'
+          remCurrAmount:
+            type:
+              - number
+              - 'null'
+          currencyAmount:
+            type:
+              - number
+              - 'null'
+          debitCreditFlag:
+            type:
+              - number
+              - 'null'
+          remainingAmount:
+            type:
+              - number
+              - 'null'
+          revaluationAmount:
+            type:
+              - number
+              - 'null'
+          restCurrencyAmount:
+            type:
+              - number
+              - 'null'
+          revaluationAmount3:
+            type:
+              - number
+              - 'null'
+          revaluationAmount4:
+            type:
+              - number
+              - 'null'
+      batchId:
+        type:
+          - number
+          - 'null'
+      invoice:
+        type:
+          - object
+          - 'null'
+        properties:
+          bacsId:
+            type:
+              - string
+              - 'null'
+          dueDate:
+            type:
+              - string
+              - 'null'
+          valueDate:
+            type:
+              - string
+              - 'null'
+          contractId:
+            type:
+              - string
+              - 'null'
+          customerId:
+            type:
+              - string
+              - 'null'
+          orderNumber:
+            type:
+              - number
+              - 'null'
+          currDocDescr:
+            type:
+              - string
+              - 'null'
+          payRecipient:
+            type:
+              - string
+              - 'null'
+          invoiceNumber:
+            type:
+              - string
+              - 'null'
+          paymentOnAccount:
+            type:
+              - boolean
+              - 'null'
+          legalActionStatus:
+            type:
+              - string
+              - 'null'
+          invoiceDescription:
+            type:
+              - string
+              - 'null'
+          currencyDocumentation:
+            type:
+              - string
+              - 'null'
+          externalArchiveReference:
+            type:
+              - string
+              - 'null'
+      taxCode:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      lastUpdated:
+        type:
+          - object
+          - 'null'
+        properties:
+          updatedAt:
+            type:
+              - string
+              - 'null'
+          updatedBy:
+            type:
+              - string
+              - 'null'
+      debtCollection:
+        type:
+          - object
+          - 'null'
+        properties:
+          debtCollectionAgency:
+            type:
+              - string
+              - 'null'
+          debtCollectionStatus:
+            type:
+              - string
+              - 'null'
+          debtCollectionReference:
+            type:
+              - string
+              - 'null'
+      sequenceNumber:
+        type:
+          - number
+          - 'null'
+      paymentFollowUp:
+        type:
+          - object
+          - 'null'
+        properties:
+          status:
+            type:
+              - string
+              - 'null'
+          payDate:
+            type:
+              - string
+              - 'null'
+          lastDueDate:
+            type:
+              - string
+              - 'null'
+          commitmentId:
+            type:
+              - string
+              - 'null'
+          lastReminded:
+            type:
+              - string
+              - 'null'
+          remittanceId:
+            type:
+              - number
+              - 'null'
+          complaintCode:
+            type:
+              - string
+              - 'null'
+          complaintDate:
+            type:
+              - string
+              - 'null'
+          paymentMethod:
+            type:
+              - string
+              - 'null'
+          paymentPeriod:
+            type:
+              - number
+              - 'null'
+          paymentPlanId:
+            type:
+              - number
+              - 'null'
+          reminderLevel:
+            type:
+              - string
+              - 'null'
+          interestStatus:
+            type:
+              - string
+              - 'null'
+          debtCollectionCode:
+            type:
+              - string
+              - 'null'
+      revaluationDate:
+        type:
+          - string
+          - 'null'
+      transactionDate:
+        type:
+          - string
+          - 'null'
+      transactionType:
+        type:
+          - string
+          - 'null'
+      sundryInformation:
+        type:
+          - object
+          - 'null'
+      transactionNumber:
+        type:
+          - number
+          - 'null'
+      discountInformation:
+        type:
+          - object
+          - 'null'
+        properties:
+          discount:
+            type:
+              - number
+              - 'null'
+          discountDate:
+            type:
+              - string
+              - 'null'
+          discountPercent:
+            type:
+              - number
+              - 'null'
+      accountingInformation:
+        type:
+          - object
+          - 'null'
+        properties:
+          account:
+            type:
+              - string
+              - 'null'
+          column1:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column2:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column3:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column4:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column5:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column6:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column7:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+    additionalProperties: true
+  unpaid_transaction:
+    type: object
+    $schema: http://json-schema.org/schema#
+    properties:
+      period:
+        type:
+          - number
+          - 'null'
+      amounts:
+        type:
+          - object
+          - 'null'
+        properties:
+          amount:
+            type:
+              - number
+              - 'null'
+          amount3:
+            type:
+              - number
+              - 'null'
+          amount4:
+            type:
+              - number
+              - 'null'
+          amountPaid:
+            type:
+              - number
+              - 'null'
+          restAmount3:
+            type:
+              - number
+              - 'null'
+          restAmount4:
+            type:
+              - number
+              - 'null'
+          currencyCode:
+            type:
+              - string
+              - 'null'
+          exchangeRate:
+            type:
+              - number
+              - 'null'
+          remCurrAmount:
+            type:
+              - number
+              - 'null'
+          currencyAmount:
+            type:
+              - number
+              - 'null'
+          debitCreditFlag:
+            type:
+              - number
+              - 'null'
+          remainingAmount:
+            type:
+              - number
+              - 'null'
+          revaluationAmount:
+            type:
+              - number
+              - 'null'
+          restCurrencyAmount:
+            type:
+              - number
+              - 'null'
+          revaluationAmount3:
+            type:
+              - number
+              - 'null'
+          revaluationAmount4:
+            type:
+              - number
+              - 'null'
+      batchId:
+        type:
+          - number
+          - 'null'
+      invoice:
+        type:
+          - object
+          - 'null'
+        properties:
+          bacsId:
+            type:
+              - string
+              - 'null'
+          dueDate:
+            type:
+              - string
+              - 'null'
+          valueDate:
+            type:
+              - string
+              - 'null'
+          contractId:
+            type:
+              - string
+              - 'null'
+          customerId:
+            type:
+              - string
+              - 'null'
+          orderNumber:
+            type:
+              - number
+              - 'null'
+          currDocDescr:
+            type:
+              - string
+              - 'null'
+          payRecipient:
+            type:
+              - string
+              - 'null'
+          invoiceNumber:
+            type:
+              - string
+              - 'null'
+          paymentOnAccount:
+            type:
+              - boolean
+              - 'null'
+          legalActionStatus:
+            type:
+              - string
+              - 'null'
+          invoiceDescription:
+            type:
+              - string
+              - 'null'
+          currencyDocumentation:
+            type:
+              - string
+              - 'null'
+          externalArchiveReference:
+            type:
+              - string
+              - 'null'
+      taxCode:
+        type:
+          - string
+          - 'null'
+      companyId:
+        type:
+          - string
+          - 'null'
+      lastUpdated:
+        type:
+          - object
+          - 'null'
+        properties:
+          updatedAt:
+            type:
+              - string
+              - 'null'
+          updatedBy:
+            type:
+              - string
+              - 'null'
+      debtCollection:
+        type:
+          - object
+          - 'null'
+        properties:
+          debtCollectionAgency:
+            type:
+              - string
+              - 'null'
+          debtCollectionStatus:
+            type:
+              - string
+              - 'null'
+          debtCollectionReference:
+            type:
+              - string
+              - 'null'
+      sequenceNumber:
+        type:
+          - number
+          - 'null'
+      paymentFollowUp:
+        type:
+          - object
+          - 'null'
+        properties:
+          status:
+            type:
+              - string
+              - 'null'
+          payDate:
+            type:
+              - string
+              - 'null'
+          lastDueDate:
+            type:
+              - string
+              - 'null'
+          commitmentId:
+            type:
+              - string
+              - 'null'
+          lastReminded:
+            type:
+              - string
+              - 'null'
+          remittanceId:
+            type:
+              - number
+              - 'null'
+          complaintCode:
+            type:
+              - string
+              - 'null'
+          complaintDate:
+            type:
+              - string
+              - 'null'
+          paymentMethod:
+            type:
+              - string
+              - 'null'
+          paymentPeriod:
+            type:
+              - number
+              - 'null'
+          paymentPlanId:
+            type:
+              - number
+              - 'null'
+          reminderLevel:
+            type:
+              - string
+              - 'null'
+          interestStatus:
+            type:
+              - string
+              - 'null'
+          debtCollectionCode:
+            type:
+              - string
+              - 'null'
+      revaluationDate:
+        type:
+          - string
+          - 'null'
+      transactionDate:
+        type:
+          - string
+          - 'null'
+      transactionType:
+        type:
+          - string
+          - 'null'
+      sundryInformation:
+        type:
+          - object
+          - 'null'
+      transactionNumber:
+        type:
+          - number
+          - 'null'
+      discountInformation:
+        type:
+          - object
+          - 'null'
+        properties:
+          discount:
+            type:
+              - number
+              - 'null'
+          discountDate:
+            type:
+              - string
+              - 'null'
+          discountPercent:
+            type:
+              - number
+              - 'null'
+      accountingInformation:
+        type:
+          - object
+          - 'null'
+        properties:
+          account:
+            type:
+              - string
+              - 'null'
+          column1:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column2:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column3:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column4:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column5:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column6:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+          column7:
+            type:
+              - object
+              - 'null'
+            properties:
+              dimValue:
+                type:
+                  - string
+                  - 'null'
+              attributeId:
+                type:
+                  - string
+                  - 'null'
+    additionalProperties: true

@@ -1,0 +1,27 @@
+SELECT
+    vin                AS vin,
+    name               AS name,
+    brand              AS brand,
+    model              AS model,
+    clientid           AS client_id,
+    hangerid           AS hanger_id,
+    isactive           AS is_active,
+    ishanger           AS is_hanger,
+    createdon          AS created_on,
+    isdeleted          AS is_deleted,
+    employeeid         AS employee_id,
+    internalid         AS internal_id,
+    modifiedon         AS modified_on,
+    description        AS description,
+    displayname        AS display_name,
+    departmentid       AS department_id,
+    vehicletypeid      AS vehicle_type_id,
+    departmentname     AS department_name,
+    vehicletypename    AS vehicle_type_name,
+    registrationnumber AS registration_number,
+    dbt_scd_id,
+    dbt_updated_at,
+    dbt_valid_from,
+    dbt_valid_to
+FROM {{ ref('admmit_vehicle_snapshot') }}
+WHERE dbt_valid_to IS NULL

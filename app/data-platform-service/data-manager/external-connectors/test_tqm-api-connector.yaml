@@ -1,0 +1,283 @@
+version: 0.78.1
+
+type: DeclarativeSource
+
+check:
+  type: CheckStream
+  stream_names:
+    - case
+
+definitions:
+  streams:
+    case:
+      type: DeclarativeStream
+      name: case
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: '#/definitions/base_requester'
+          path: >-
+            GetCases?searchData.exportFields=CaseID&searchData.exportFields=Position&searchData.exportFields=ProjectLevel&searchData.exportFields=DateOccurred&searchData.exportFields=DatePublished&searchData.exportFields=Deadline&searchData.exportFields=DateClosed&searchData.exportFields=CaseType&searchData.exportFields=SeverityDegree&searchData.exportFields=Description&searchData.exportFields=Comments&searchData.exportFields=Originator&searchData.exportFields=Approver&searchData.exportFields=OriginatorEmployeeNumber&searchData.exportFields=OrganizationLevel3&searchData.exportFields=Status&searchData.exportFields=KPIParameters&searchData.exportFields=SeverityDegree&searchData.exportFields=ImmediateActions
+          http_method: GET
+          request_headers:
+            Token: '{{ config[''token''] }}'
+            OL1Key: nrctest
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+      primary_key:
+        - ID
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: '#/schemas/case'
+  base_requester:
+    type: HttpRequester
+    url_base: https://tqm5api.tqmenterprise.no/nrctest/CaseHandling/External/Cases/
+
+streams:
+  - $ref: '#/definitions/streams/case'
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: http://json-schema.org/draft-07/schema#
+    required: []
+    properties: {}
+    additionalProperties: true
+
+metadata:
+  autoImportSchema:
+    case: true
+
+schemas:
+  case:
+    type: object
+    $schema: http://json-schema.org/schema#
+    required:
+      - ID
+    properties:
+      Actions:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            ActionOwner:
+              type:
+                - object
+                - 'null'
+              properties:
+                ID:
+                  type:
+                    - number
+                    - 'null'
+                Login:
+                  type:
+                    - string
+                    - 'null'
+                Name:
+                  type:
+                    - string
+                    - 'null'
+            ActionStatus:
+              type:
+                - string
+                - 'null'
+            Deadline:
+              type:
+                - string
+                - 'null'
+            ExecutedActions:
+              type:
+                - string
+                - 'null'
+            ID:
+              type:
+                - number
+                - 'null'
+            Name:
+              type:
+                - string
+                - 'null'
+            PlannedActions:
+              type:
+                - string
+                - 'null'
+            RootCause:
+              type:
+                - string
+                - 'null'
+      Attachments:
+        type:
+          - array
+          - 'null'
+      CaseID:
+        type:
+          - number
+          - 'null'
+      CaseType:
+        type:
+          - object
+          - 'null'
+        properties:
+          ID:
+            type:
+              - number
+              - 'null'
+          Name:
+            type:
+              - string
+              - 'null'
+      CaseURL:
+        type:
+          - string
+          - 'null'
+      Comments:
+        type:
+          - string
+          - 'null'
+      CustomFields:
+        type:
+          - array
+          - 'null'
+      DateClosed:
+        type:
+          - string
+          - 'null'
+      DateOccurred:
+        type:
+          - string
+          - 'null'
+      DatePublished:
+        type:
+          - string
+          - 'null'
+      Deadline:
+        type:
+          - string
+          - 'null'
+      Description:
+        type:
+          - string
+          - 'null'
+      ID:
+        type: number
+      ImmediateActions:
+        type:
+          - string
+          - 'null'
+      KPIParameters:
+        type:
+          - array
+          - 'null'
+        items:
+          type:
+            - object
+            - 'null'
+          properties:
+            ID:
+              type:
+                - number
+                - 'null'
+            Name:
+              type:
+                - string
+                - 'null'
+      KPIWarnings:
+        type:
+          - array
+          - 'null'
+      OrganizationLevel3:
+        type:
+          - object
+          - 'null'
+        properties:
+          ID:
+            type:
+              - number
+              - 'null'
+          Name:
+            type:
+              - string
+              - 'null'
+      Originator:
+        type:
+          - object
+          - 'null'
+        properties:
+          ID:
+            type:
+              - number
+              - 'null'
+          Login:
+            type:
+              - string
+              - 'null'
+          Name:
+            type:
+              - string
+              - 'null'
+      OriginatorEmployeeNumber:
+        type:
+          - string
+          - 'null'
+      Position:
+        type:
+          - string
+          - 'null'
+      ProcessLevels:
+        type:
+          - array
+          - 'null'
+      ProgressLogs:
+        type:
+          - array
+          - 'null'
+      ProjectLevel:
+        type:
+          - object
+          - 'null'
+        properties:
+          FullPath:
+            type:
+              - string
+              - 'null'
+          ID:
+            type:
+              - number
+              - 'null'
+          Name:
+            type:
+              - string
+              - 'null'
+      RiskMeasurements:
+        type:
+          - array
+          - 'null'
+      SeparateKPIParameters:
+        type:
+          - array
+          - 'null'
+      Status:
+        type:
+          - object
+          - 'null'
+        properties:
+          Key:
+            type:
+              - string
+              - 'null'
+          Name:
+            type:
+              - string
+              - 'null'
+    required:
+      - ID
+    additionalProperties: true
