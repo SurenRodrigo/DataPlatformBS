@@ -228,6 +228,8 @@ services:
       - ./data-platform-service/dbt_models_se:/app/dbt_models_se:delegated
       # Mount data-manager directory for PyAirbyte and sync functions
       - ./data-platform-service/data-manager:/app/data-manager:delegated
+      # Mount external files directory for Excel files and other external data files
+      - ./data-platform-service/external_files:/app/external_files:delegated
     ports:
       - "4266:4266"  # gRPC server port
       - "4270:4270"  # Sweden data sync gRPC server port

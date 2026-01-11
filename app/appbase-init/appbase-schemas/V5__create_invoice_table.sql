@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS invoice_data (
     customer_name VARCHAR(255) NOT NULL,
     item_code VARCHAR(100) NOT NULL,
     seller_id INTEGER NOT NULL,
-    seller_name VARCHAR(255) NOT NULL,
+    seller_name VARCHAR(255),
     quantity NUMERIC(10,2) NOT NULL,
     line_total NUMERIC(12,2) NOT NULL,
     gross_profit NUMERIC(12,2) NOT NULL,

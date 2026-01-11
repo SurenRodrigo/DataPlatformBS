@@ -98,6 +98,84 @@ class ExcelReader:
         print(f" Loaded sheets: {list(df_dict.keys())}")
         return df_dict
 
+    def read_sheet_from_path(self, file_path: str, sheet_name: Optional[str] = None) -> pd.DataFrame:
+        """Read a single sheet from an Excel file located at the given file path.
+
+        Args:
+            file_path: Local file system path to the Excel file (e.g., "/path/to/file.xlsx")
+            sheet_name: Name of the sheet to read. If None, reads the first sheet.
+            
+        Returns:
+            pd.DataFrame: DataFrame containing the sheet data
+            
+        Raises:
+            FileNotFoundError: If file_path doesn't exist
+            IOError: If file cannot be read
+            ValueError: If sheet_name doesn't exist in the file
+            TypeError: If file_path is not a string
+            
+        Examples:
+            # Read a specific sheet from local file
+            df = reader.read_sheet_from_path("/path/to/file.xlsx", sheet_name="Sheet1")
+            
+            # Read first sheet from local file
+            df = reader.read_sheet_from_path("/path/to/file.xlsx")
+        """
+        if not isinstance(file_path, str):
+            raise TypeError(f"file_path must be a string, got {type(file_path)}")
+        
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found at path: '{file_path}'")
+        
+        if not os.path.isfile(file_path):
+            raise ValueError(f"Path exists but is not a file: '{file_path}'")
+        
+        try:
+            with open(file_path, 'rb') as f:
+                file_bytes = io.BytesIO(f.read())
+            return self.read_sheet(file_bytes, sheet_name)
+        except IOError as e:
+            raise IOError(f"Failed to read file at path '{file_path}': {e}")
+
+    def read_all_sheets_from_path(self, file_path: str, sheets: Optional[list] = None) -> Dict[str, pd.DataFrame]:
+        """Read all sheets or specific sheets from an Excel file located at the given file path.
+
+        Args:
+            file_path: Local file system path to the Excel file (e.g., "/path/to/file.xlsx")
+            sheets: Optional list of sheet names to read. If None, reads all sheets.
+            
+        Returns:
+            Dict[str, pd.DataFrame]: Dictionary mapping sheet names to DataFrames
+            
+        Raises:
+            FileNotFoundError: If file_path doesn't exist
+            IOError: If file cannot be read
+            ValueError: If any sheet name in sheets list doesn't exist in the file
+            TypeError: If file_path is not a string
+            
+        Examples:
+            # Read all sheets from local file path
+            all_sheets = reader.read_all_sheets_from_path("/path/to/file.xlsx")
+            
+            # Read specific sheets from local file path
+            sheets = reader.read_all_sheets_from_path("/path/to/file.xlsx", sheets=["Sheet1", "Sheet2"])
+        """
+        if not isinstance(file_path, str):
+            raise TypeError(f"file_path must be a string, got {type(file_path)}")
+        
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found at path: '{file_path}'")
+        
+        if not os.path.isfile(file_path):
+            raise ValueError(f"Path exists but is not a file: '{file_path}'")
+        
+        try:
+            with open(file_path, 'rb') as f:
+                file_bytes = io.BytesIO(f.read())
+            return self.read_all_sheets(file_bytes, sheets)
+        except IOError as e:
+            raise IOError(f"Failed to read file at path '{file_path}': {e}")
+
     def extract_tables_by_blank_columns(self, df: pd.DataFrame, sheet_name: str = "") -> Dict[str, pd.DataFrame]:
         """
         Split sheet into tables separated by sequences of 'Unnamed:X' columns.
