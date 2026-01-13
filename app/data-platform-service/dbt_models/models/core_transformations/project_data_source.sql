@@ -7,7 +7,7 @@ SELECT
     -- commented since project table doesnt contain is_active attribute
     -- NULL AS is_active
 FROM {{ ref('project') }} AS project
-LEFT JOIN {{ ref('tenant_seed') }} AS tenant ON tenant.id = 1 -- NRC Group AS
+LEFT JOIN {{ ref('tenant_seed') }} AS tenant ON tenant.id = 1 -- Gjerde & Byhring AS
 
 UNION ALL
 

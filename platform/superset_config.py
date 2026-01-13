@@ -179,6 +179,12 @@ D3_FORMAT = {
     "grouping": [3],
     "currency": ["NOK", " "],
 }
+# D3_FORMAT = {
+#     "decimal": ".",
+#     "thousands": ",",
+#     "grouping": [3],
+#     "currency": ["NOK ", ""],  # optional; or ["", ""] if you don't want NOK prefix
+# }   
 
 # =============================================================================
 # APPLICATION CONFIGURATION
@@ -194,7 +200,7 @@ CACHE_CONFIG = {
 }
 
 # Custom branding
-APP_NAME = "NRC Group"
+APP_NAME = "Gjerde & Byhring AS"
 APP_ICON = "/static/assets/images/superset_logo.png"
 APP_ICON_WIDTH = 300
 
@@ -203,7 +209,7 @@ CSS_DEFAULT_THEME = "bootstrap.min.css"
 
 # Custom navbar logo
 LOGO_TARGET_PATH = None  # Set to a URL if you want the logo to be clickable
-LOGO_TOOLTIP = "NRC Group"
+LOGO_TOOLTIP = "Gjerde & Byhring AS"
 LOGO_RIGHT_TEXT = ""  # Text to show next to logo
 
 # =============================================================================

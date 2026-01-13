@@ -25,7 +25,7 @@ APPBASE_DB_NAME_SW=dataplatform_sw
 APPBASE_DB_HOST=db
 APPBASE_DB_PORT=5432
 APPBASE_DB_USER=dataplatuser
-APPBASE_DB_PASSWORD=dataplatpassword
+APPBASE_DB_PASSWORD=    
 
 # AppBase Configuration Database  
 APPBASE_CONFIG_DB_HOST=db
