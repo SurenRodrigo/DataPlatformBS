@@ -57,7 +57,11 @@ AZURE_SQL_PORT=""
 AZURE_SOURCE_DATA_DATABASE_NAME=""
 
 # SQL Server Admin (Entra ID)
-AZURE_SQL_ADMIN_USER=""
+AZURE_SQL_ADMIN_USER_ENTRA=""
+
+# SQL Server Admin (SQL Authentication)
+AZURE_SQL_ADMIN_USER_SQL=""
+AZURE_SQL_ADMIN_PASSWORD=""
 
 # Service Principal for SQL Database Access
 # Use the service principal credentials above (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
