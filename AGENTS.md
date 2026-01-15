@@ -62,10 +62,8 @@ data-platform-99x-v2/
 │   │   │   ├── resources/     # Dagster resources
 │   │   │   └── scripts/       # Utility scripts
 │   │   ├── dagster_code/      # Dagster code locations
-│   │   │   ├── nrc_data_sync/ # NRC data sync pipeline (port 4269)
 │   │   │   ├── sweden_data_sync/ # Sweden data sync pipeline (port 4270)
-│   │   │   ├── gk_data_sync/  # GK data sync pipeline (port 4271)
-│   │   │   └── nrc_integrations/ # NRC integrations pipeline (port 4272)
+│   │   │   └── bridgestone_data_sync/ # Bridgestone data sync pipeline (port 4273)
 │   │   ├── dbt_models/        # DBT transformation models
 │   │   │   ├── dbt_project.yml # DBT project configuration
 │   │   │   ├── models/        # DBT models
@@ -80,9 +78,8 @@ data-platform-99x-v2/
 │   │   │   ├── V2__create_init_indexes.sql
 │   │   │   ├── V3__create_init_foreign_keys.sql
 │   │   │   ├── V4__sample_init_data.sql
-│   │   │   ├── V5__create_eventstore_tables.sql
-│   │   │   ├── V6__create_completed_events_table.sql
-│   │   │   └── V7__add_integration_fields_to_event_processed_logs.sql
+│   │   │   ├── V5__create_invoice_table.sql
+│   │   │   └── V6__create_credit_data_table.sql
 │   │   └── init/              # Application initialization service
 │   │       ├── package.json   # Node.js dependencies
 │   │       ├── src/           # TypeScript source code
@@ -111,10 +108,10 @@ data-platform-99x-v2/
 - **Data Platform Service**: Python service (Python 3.11) for Dagster gRPC servers and PyAirbyte integration
   - Contains: `data-manager/`, `dagster_code/`, `dbt_models/`, `dbt_models_se/` (all organized under `data-platform-service/`)
 - **Client**: Next.js frontend application with TypeScript (not deployed as Docker service, runs separately)
-- **Dagster Code Locations**: Data pipeline definitions and orchestration (4 active locations)
+- **Dagster Code Locations**: Data pipeline definitions and orchestration (2 active locations)
 - **DBT Models**: Data transformation layer with staging and marts (main + Sweden-specific)
 - **PyAirbyte Integration**: External data connector management with cache database support
-- **Database Migrations**: Flyway-style schema management (V1-V7 migrations)
+- **Database Migrations**: Flyway-style schema management (V1-V6 migrations)
 
 ## Setup Commands
 
@@ -193,13 +190,13 @@ cd app && ./start.sh
 
 ```
 Platform: db → hasura → [metabase|superset] → [dagster-webserver|dagster-daemon] → nginx
-App: appbase-init → data-manager
+App: appbase-init → data-platform-service
 ```
 
 ### Detailed Service Flow
 1. **Platform Layer**: Database → Hasura → BI Tools → Dagster → Nginx
-2. **Application Layer**: AppBase Init → Data Manager
-3. **Cross-Layer**: Data Manager connects to Dagster via gRPC (ports 4266, 4269, 4270, 4271, 4272)
+2. **Application Layer**: AppBase Init → Data Platform Service
+3. **Cross-Layer**: Data Platform Service connects to Dagster via gRPC (ports 4266, 4270, 4273)
 4. **Client**: Next.js frontend runs separately (not as Docker service), connects to Hasura GraphQL API
 
 ## Network Architecture
@@ -209,10 +206,8 @@ App: appbase-init → data-manager
 - **Shared Volumes**: `dagster_shared_storage` between platform and app
 - **gRPC Communication**: Data Platform Service runs multiple gRPC servers:
   - Port 4266: Default/main gRPC server
-  - Port 4269: nrc_data_sync code location
   - Port 4270: sweden_data_sync code location
-  - Port 4271: gk_data_sync code location
-  - Port 4272: nrc_integrations code location
+  - Port 4273: bridgestone_data_sync code location
 - **Subdomain Routing**: Nginx routes traffic based on subdomains (hasura.localhost, dagster.localhost, superset.localhost)
 
 ## Environment Configuration
@@ -305,7 +300,7 @@ docker compose -f app/docker-compose.yaml logs -f
 - **Database**: PostgreSQL health check via `pg_isready`
 - **Hasura**: GraphQL endpoint availability
 - **Dagster**: Webserver API availability (port 3030)
-- **Data Platform Service**: gRPC server health check (port 4266 for main server, ports 4269-4272 for code locations)
+- **Data Platform Service**: gRPC server health check (port 4266 for main server, ports 4270 and 4273 for code locations)
 - **BI Tools**: Web interface availability
 - **Nginx**: HTTP endpoint availability with health endpoint
 - **AppBase Init**: One-time initialization service - verifies completion via exit code (0 = success), not running status
@@ -323,10 +318,8 @@ curl http://localhost:8081/healthz  # Hasura
 curl http://localhost:3030/health   # Dagster
 curl http://localhost/health        # Nginx
 curl http://localhost:4266/health   # Data Platform Service main gRPC server
-curl http://localhost:4269/health   # NRC data sync gRPC server
 curl http://localhost:4270/health   # Sweden data sync gRPC server
-curl http://localhost:4271/health   # GK data sync gRPC server
-curl http://localhost:4272/health   # NRC integrations gRPC server
+curl http://localhost:4273/health   # Bridgestone data sync gRPC server
 ```
 
 ## Common Issues and Solutions
@@ -378,7 +371,7 @@ curl http://localhost:4272/health   # NRC integrations gRPC server
 - **External Networks**: Cross-compose communication via external networks
 - **Shared Storage**: Dagster configuration shared between platform and app
 - **External Database Mode**: Use `--no-local-db` flag with `docker-compose.no-db.yaml` override file
-- **Multiple gRPC Servers**: Data Platform Service runs 4 code locations on separate ports (4269-4272)
+- **Multiple gRPC Servers**: Data Platform Service runs 2 code locations on separate ports (4270, 4273)
 - **Configuration-Driven**: Code locations defined in `app/data-platform-service/data-manager/resources/dagster/code-locations.json`
 - **Organized Structure**: All data platform components (data-manager, dagster_code, dbt_models, dbt_models_se) under `data-platform-service/`
 
@@ -397,11 +390,11 @@ curl http://localhost:4272/health   # NRC integrations gRPC server
 - `platform/nginx.dev.conf` - Development nginx configuration
 - `platform/nginx.prod.conf` - Production nginx configuration
 - `platform/dagster.yaml` - Dagster platform configuration
-- `platform/workspace.yaml` - Dagster workspace configuration (defines 4 gRPC code locations)
+- `platform/workspace.yaml` - Dagster workspace configuration (defines 2 gRPC code locations)
 - `app/data-platform-service/data-manager/dagster.yaml` - Dagster app configuration
-- `app/data-platform-service/data-manager/resources/dagster/code-locations.json` - Code location definitions (nrc_data_sync, sweden_data_sync, gk_data_sync, nrc_integrations)
+- `app/data-platform-service/data-manager/resources/dagster/code-locations.json` - Code location definitions (sweden_data_sync, bridgestone_data_sync)
 - `app/data-platform-service/data-manager/scripts/dagster-init.sh` - Multi-gRPC server initialization script
-- `app/appbase-init/appbase-schemas/` - Database migration files (V1-V7)
+- `app/appbase-init/appbase-schemas/` - Database migration files (V1-V6)
 - `app/appbase-init/init/` - Application initialization service (TypeScript source, scripts, resources)
 - `app/appbase-init/init/scripts/entrypoint.sh` - Application initialization entrypoint (reads service.yaml for conditional initialization, validates env vars when services are enabled)
 - `app/appbase-init/init/scripts/db-init.sh` - Database initialization script (verifies service databases exist only for services enabled in service.yaml)
@@ -473,7 +466,7 @@ cd app && ./start.sh --no-cache
 
 ### Database Schema Management
 - Flyway-style migration system
-- Versioned schema changes (V1-V7 currently)
+- Versioned schema changes (V1-V6 currently)
 - Automated database initialization via AppBase Init service
 - Multi-schema support (hasura, metabase, superset, dagster)
 - AppBase Init uses multi-stage Dockerfile with Flyway extracted from official image
@@ -538,10 +531,8 @@ All platform services use security-hardened container images with zero critical 
 - All images tested and verified with Docker Scout vulnerability scanning
 
 **Dagster Code Locations:**
-- **nrc_data_sync** (port 4269): NRC data synchronization pipeline
 - **sweden_data_sync** (port 4270): Sweden-specific data synchronization pipeline
-- **gk_data_sync** (port 4271): GK data synchronization pipeline
-- **nrc_integrations** (port 4272): NRC integrations and event orchestration pipeline
+- **bridgestone_data_sync** (port 4273): Bridgestone data synchronization pipeline
 - All code locations configured in `app/data-platform-service/data-manager/resources/dagster/code-locations.json`
 - Platform workspace references all locations in `platform/workspace.yaml`
 

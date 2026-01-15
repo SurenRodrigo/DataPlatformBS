@@ -1,0 +1,90 @@
+################################################################################
+# AZURE DEPLOYMENT CONFIGURATION - SAMPLE TEMPLATE
+################################################################################
+# Copy this file to .env and update with your Azure subscription details
+# cp _env_sample .env
+################################################################################
+
+################################################################################
+# AZURE SUBSCRIPTION CONFIGURATION
+################################################################################
+AZURE_SUBSCRIPTION_ID=your-subscription-id-here
+AZURE_SUBSCRIPTION_NAME=your-subscription-name-here
+
+################################################################################
+# AZURE RESOURCE GROUP CONFIGURATION
+################################################################################
+AZURE_RESOURCE_GROUP_NAME=your-resource-group-name-here
+AZURE_LOCATION=eastus
+
+################################################################################
+# AZURE DEPLOYMENT CONFIGURATION
+################################################################################
+AZURE_DEPLOYMENT_NAME=bride-stone-demo
+AZURE_ENVIRONMENT=dev
+
+################################################################################
+# AZURE SERVICE PRINCIPAL (for dataplatform Database Access)
+################################################################################
+# Service Principal created for Azure SQL Database access (dataplatform)
+# Display Name: sp-dataplatform-sql
+# Object ID: be99dc09-21a7-486f-97cb-53d61cd2a7f1
+AZURE_CLIENT_ID=""
+AZURE_CLIENT_SECRET=""
+AZURE_TENANT_ID=""
+
+################################################################################
+# AZURE SERVICE PRINCIPAL (for source_data Database Access)
+################################################################################
+# Service Principal created for Azure SQL Database access (source_data)
+# Display Name: sp-source-data-sql
+# Object ID: 189c06e1-b17c-4f75-aeba-aa3a283bc0eb
+AZURE_SOURCE_DATA_CLIENT_ID=""
+AZURE_SOURCE_DATA_CLIENT_SECRET=""
+# Tenant ID is the same as above
+AZURE_SOURCE_DATA_TENANT_ID=""
+
+################################################################################
+# AZURE SQL DATABASE CONFIGURATION
+################################################################################
+# SQL Server and Database details
+AZURE_SQL_SERVER_NAME=""
+AZURE_SQL_DATABASE_NAME=""
+AZURE_SQL_SERVER_FQDN=""
+AZURE_SQL_PORT=""
+
+# Source Data Database details (same server, different database)
+AZURE_SOURCE_DATA_DATABASE_NAME=""
+
+# SQL Server Admin (Entra ID)
+AZURE_SQL_ADMIN_USER=""
+
+# Service Principal for SQL Database Access
+# Use the service principal credentials above (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
+# Connection string format for service principal:
+# Driver={ODBC Driver 18 for SQL Server};Server=tcp:${AZURE_SQL_SERVER_FQDN},${AZURE_SQL_PORT};Database=${AZURE_SQL_DATABASE_NAME};Uid=${AZURE_CLIENT_ID};Pwd=${AZURE_CLIENT_SECRET};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;Authentication=ActiveDirectoryServicePrincipal
+
+################################################################################
+# OPTIONAL: ADDITIONAL AZURE CONFIGURATION
+################################################################################
+# Tags for resources (comma-separated key=value pairs)
+# Example: AZURE_TAGS="Environment=dev,Project=BrideStone,Team=DataPlatform"
+AZURE_TAGS=""
+
+# Storage Account Name (if needed for deployment artifacts)
+# Must be globally unique, lowercase alphanumeric, 3-24 characters
+# AZURE_STORAGE_ACCOUNT_NAME=yourstorageaccountname
+
+# Key Vault Name (if using Azure Key Vault for secrets)
+# Must be globally unique, alphanumeric and hyphens, 3-24 characters
+# AZURE_KEY_VAULT_NAME=your-key-vault-name
+
+################################################################################
+# NOTES
+################################################################################
+# 1. Never commit this file with real credentials to version control
+# 2. Add .env to .gitignore in azure_scripts folder
+# 3. Use Azure Key Vault for sensitive values in production
+# 4. Verify subscription access: az account show
+# 5. Verify resource group exists: az group show --name <name>
+################################################################################

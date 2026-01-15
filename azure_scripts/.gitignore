@@ -1,0 +1,21 @@
+# Azure Scripts - Ignore sensitive configuration files
+.env
+.env.local
+.env.*.local
+
+# Python virtual environment
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Azure CLI output files
+*.json
+!*.template.json
+
+# Temporary files
+*.tmp
+*.log
