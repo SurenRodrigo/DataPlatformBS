@@ -214,6 +214,22 @@ services:
       # Hasura configuration
       HASURA_URL: ${HASURA_URL}
       HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
+      
+      # Azure SQL Database configuration for WWI data sync
+      AZURE_SQL_SERVER_FQDN: ${AZURE_SQL_SERVER_FQDN}
+      AZURE_SQL_PORT: ${AZURE_SQL_PORT}
+      
+      # Destination Database: dataplatform (with service principal)
+      AZURE_SQL_DATABASE_NAME: ${AZURE_SQL_DATABASE_NAME}
+      AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+      AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET}
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      
+      # Source Database: source_data / Wide World Importers (with service principal)
+      AZURE_SOURCE_DATA_DATABASE_NAME: ${AZURE_SOURCE_DATA_DATABASE_NAME}
+      AZURE_SOURCE_DATA_CLIENT_ID: ${AZURE_SOURCE_DATA_CLIENT_ID}
+      AZURE_SOURCE_DATA_CLIENT_SECRET: ${AZURE_SOURCE_DATA_CLIENT_SECRET}
+      AZURE_SOURCE_DATA_TENANT_ID: ${AZURE_SOURCE_DATA_TENANT_ID}
           
     depends_on:
       - appbase-init
