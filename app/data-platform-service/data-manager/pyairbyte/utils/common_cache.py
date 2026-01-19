@@ -17,16 +17,6 @@ CACHE_CONFIGS = {
         'schema_name': 'pyairbyte_cache',
         'table_prefix': 'default_',
         'cleanup': True
-    },
-    'sweden': {
-        'host': os.getenv('PYAIRBYTE_CACHE_SWEDEN_DB_HOST', 'db'),
-        'port': int(os.getenv('PYAIRBYTE_CACHE_SWEDEN_DB_PORT', '5432')),
-        'database': os.getenv('PYAIRBYTE_CACHE_SWEDEN_DB_NAME', 'dataplatform_sw'),
-        'username': os.getenv('PYAIRBYTE_CACHE_SWEDEN_DB_USER', 'dataplatuser_sw'),
-        'password': os.getenv('PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD', 'dataplatpassword_sw'),
-        'schema_name': 'pyairbyte_cache_sweden',
-        'table_prefix': 'sweden_',
-        'cleanup': True
     }
     # Add more cache configurations here as needed
     # 'nrc': { ... },

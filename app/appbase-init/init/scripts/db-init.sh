@@ -54,11 +54,11 @@ get_service_state() {
     node parse-service-yaml.js "$service_path" 2>/dev/null || echo "false"
 }
 
-aribyte_cash_db_name_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_NAME}
-aribyte_cash_db_host_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_HOST}
-aribyte_cash_db_port_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_PORT}
-aribyte_cash_db_user_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_USER}
-aribyte_cash_db_pass_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD}
+# aribyte_cash_db_name_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_NAME}
+# aribyte_cash_db_host_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_HOST}
+# aribyte_cash_db_port_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_PORT}
+# aribyte_cash_db_user_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_USER}
+# aribyte_cash_db_pass_sweden=${PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD}
 
 create_database() {
   db_name=$1
@@ -79,7 +79,7 @@ create_database() {
 
 create_database "$faros_db_name" "$faros_db_host" "$faros_db_port" "$faros_db_user" "$faros_db_pass"
 
-create_database "$aribyte_cash_db_name_sweden" "$aribyte_cash_db_host_sweden" "$aribyte_cash_db_port_sweden" "$aribyte_cash_db_user_sweden" "$aribyte_cash_db_pass_sweden"
+# create_database "$aribyte_cash_db_name_sweden" "$aribyte_cash_db_host_sweden" "$aribyte_cash_db_port_sweden" "$aribyte_cash_db_user_sweden" "$aribyte_cash_db_pass_sweden"
 # Check if run_db_migrations is true and only run below if it is
 if [ "$run_db_migrations" = "true" ] 
 then
