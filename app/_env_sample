@@ -115,12 +115,6 @@ PYAIRBYTE_CACHE_DB_USER=dataplatuser
 PYAIRBYTE_CACHE_DB_PASSWORD=dataplatpassword
 PYAIRBYTE_CACHE_DB_NAME=dataplatform 
 
-PYAIRBYTE_CACHE_SWEDEN_DB_HOST=db
-PYAIRBYTE_CACHE_SWEDEN_DB_PORT=5432
-PYAIRBYTE_CACHE_SWEDEN_DB_USER=dataplatuser
-PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD=dataplatpassword
-PYAIRBYTE_CACHE_SWEDEN_DB_NAME=dataplatform_sw
-
 ################################################################################
 # PYAIRBYTE CONNECTOR DYNAMIC CONFIGURATION
 ################################################################################
@@ -137,98 +131,9 @@ PYAIRBYTE_CACHE_SWEDEN_DB_NAME=dataplatform_sw
 # - Secrets should be managed via your secret manager in production
 
 # Uncomment and configure as needed:
-PYAIRBYTE_CONNECTOR_CONFIGS='{"next_erp_connector": {"api_token": ""},"admmit-connector":{"server":"Admmitdp.database.windows.net", "database":"", "username":"", "password":"", "schema":"dbo"}, "catalyst-connector":{"client_id":"", "client_secret":""}, "catalyst-v1-connector":{"client_id":"", "client_secret":""}, "ditio-kept-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-time-styr-kept-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-time-styr-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "unit4-api-connector":{"username":"", "password":""}, "unit4-ebitapi-connector":{"username":"", "password":""}, "unit4-interimapi-connector":{"username":"", "password":""}, "unit4-invoiceapi-connector":{"username":"", "password":""}, "unit4-liqudityapi-connector":{"username":"", "password":""}, "tqm-api-connector":{"token":""}, "endringer-api-connector":{"username":"", "password":""}, "icore-connector":{"x_api_key":"", "clientid":"","fromAlteredTs":"2025-10-01", "toAlteredTs":"2025-10-30T00:00:00Z"}, "jobylonbi-connector":{"host":"","port":3306,"database":"","username":"","password":"","schema":"","ssl":{"ssl_verify_cert":true,"ssl_verify_identity":true}}, "test_ditio-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "test_tqm-api-connector":{"token":""}, "volvo-connector":{"username":"", "password":""}}'
+PYAIRBYTE_CONNECTOR_CONFIGS='{"next_erp_connector": {"api_token": ""}}'
 
-################################################################################
-# TEST CONNECTOR CONFIGURATION
-################################################################################
-# Set to true to use test connectors instead of production connectors
-# This affects DBT models and case processing assets
-# Ditio Test Connectors
-USE_DITIO_TEST_CONNECTORS=false
 
-# TQM Test Connectors  
-USE_TQM_TEST_CONNECTORS=false
-
-################################################################################
-# NRC SHAREPOINT CONFIGURATION
-################################################################################
-SP_CLIENT_ID=client_id
-SP_CLIENT_SECRET=client_secret
-SP_SITE_URL=site_url
-SP_FILE_LOCATION=file_location
-HR_FILE_NAME=hr_file_name
-HSE_FILE_NAME=hse_file_name
-
-################################################################################
-# GK SHAREPOINT CONFIGURATION
-################################################################################
-GK_SP_CLIENT_ID=client_id
-GK_SP_CLIENT_SECRET=client_secret
-GK_SP_TENANT_ID=tenant_id
-GK_SP_HOSTNAME=hostname
-GK_SP_SITE_PATH=site_path
-GK_SP_DRIVE_NAME=drive_name
-GK_SP_VISMA_SYNC_FILE_PATH=visma_sync_file_path 
-GK_SP_POTENTIAL_PROJECT_SYNC_FILE_PATH=potential_project_sync_file_path
-GK_HR_FILE_NAME=hr_file_name
-GK_SP_COMPELLO_SYNC_FILE_PATH=comello_sync_file_path
-GK_AZURE_CONTAINER_SAS_URL=azure_container_sas_url
-
-################################################################################
-# TQM API CONFIGURATION
-################################################################################
-TQM_CREATE_CASE_URL=create_case_url
-TQM_OL1_KEY=key
-TQM_TOKEN=token
-
-################################################################################
-# DITIO API CONFIGURATION
-################################################################################
-DITIO_AUTH_TOKEN_URL=auth_url
-DITIO_AUTH_CLIENT_ID=client_id
-DITIO_AUTH_CLIENT_SECRET=client_secret
-DITIO_AUTH_CLIENT_ID_KEPT=client_id_kept
-DITIO_AUTH_CLIENT_SECRET_KEPT=client_secret_kept
-DITIO_KEPT_COMPANY_ID=001068
-DITIO_PATCH_CASE_URL=ditio_patch_case_url
-DITIO_CREATE_PROJECT_URL=ditio_create_project_url
-DITIO_CREATE_TASK_URL=ditio_create_task_url
-DITIO_GET_TASKS_BY_TYPE_URL=ditio_get_tasks_by_type_url
-
-################################################################################
-# AØE DITIO API CONFIGURATION
-################################################################################
-AOE_DITIO_CLIENT_ID=client_id
-AOE_DITIO_CLIENT_SECRET=client_secret
-AOE_DITIO_AUTH_TOKEN_URL=auth_token_url
-AOE_DITIO_API_BASE_URL=api_base_url
-AOE_DITIO_CREATE_CASE_URL=create_case_url
-
-################################################################################
-# Endre API CONFIGURATION
-################################################################################
-ENDRE_API_BASE_URL=api_base_url
-ENDRE_API_USERNAME=api_username
-ENDRE_API_PASSWORD=api_password
-
-################################################################################
-# SCANIA API CONFIGURATION
-################################################################################
-SCANIA_CLIENT_ID=client_id
-SCANIA_SECRET_KEY=secret_key
-SCANIA_BASE_URL=base_url
-
-JOBYLON_API_URL="https://feed.jobylon.com/feeds/ad71f053-e255-4d46-b47f-de49e932a16d/?format=xml"
-
-#Update SE_SP variables for Sweden SharePoint when recive
-SE_SP_CLIENT_ID=client_id_same_as_gk
-SE_SP_CLIENT_SECRET=client_secret_same_as_gk
-SE_SP_TENANT_ID=tenant_id_same_as_gk
-SE_SP_HOSTNAME=hostname_same_as_gk
-SE_SP_SITE_PATH="SENEXTDataAPI"
-SE_SP_DRIVE_NAME="Documents"
-SE_SP_SYNC_FILE_PATH="General/Indata DB NEXT.xlsx"
 
 ################################################################################
 # ACTION HANDLER SERVICE CONFIGURATION
