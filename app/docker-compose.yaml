@@ -247,8 +247,7 @@ services:
       # Mount external files directory for Excel files and other external data files
       - ./data-platform-service/external_files:/app/external_files:delegated
     ports:
-      - "4266:4266"  # gRPC server port
-      - "4270:4270"  # Sweden data sync gRPC server port
+      - "4266:4266"  # gRPC server port (reserved/compatibility)
       - "4273:4273"  # Bridgestone data sync gRPC server port
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:4266/health || exit 1"]

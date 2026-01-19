@@ -1,2 +1,0 @@
-# Exclude the paths/files that we don't need to run the SQLFluff linter tool on
-target/
