@@ -151,7 +151,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
 # Expose gRPC ports for all code locations
-EXPOSE 4266 4270 4273
+EXPOSE 4266 4273
 
 # Default command (will be overridden by entrypoint)
 CMD ["/app/data-manager/entrypoint.sh"]

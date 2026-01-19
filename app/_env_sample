@@ -25,7 +25,7 @@ APPBASE_DB_NAME_SW=dataplatform_sw
 APPBASE_DB_HOST=db
 APPBASE_DB_PORT=5432
 APPBASE_DB_USER=dataplatuser
-APPBASE_DB_PASSWORD=    
+APPBASE_DB_PASSWORD=dataplatpassword
 
 # AppBase Configuration Database  
 APPBASE_CONFIG_DB_HOST=db
@@ -241,3 +241,21 @@ SE_SP_SYNC_FILE_PATH="General/Indata DB NEXT.xlsx"
 # Default: production (for safety)
 # Set to 'development' for local development with hot reload
 APP_MODE=production
+################################################################################
+# AZURE SQL DATABASE CONFIGURATION (for WWI data sync)
+################################################################################
+# Azure SQL Server and Database details
+AZURE_SQL_SERVER_FQDN=dataplatformpoc.database.windows.net
+AZURE_SQL_PORT=1433
+
+# Destination Database: dataplatform (with service principal)
+AZURE_SQL_DATABASE_NAME=dataplatform
+AZURE_CLIENT_ID=
+AZURE_CLIENT_SECRET=
+AZURE_TENANT_ID=
+
+# Source Database: source_data / Wide World Importers (with service principal)
+AZURE_SOURCE_DATA_DATABASE_NAME=source_data
+AZURE_SOURCE_DATA_CLIENT_ID=
+AZURE_SOURCE_DATA_CLIENT_SECRET=
+AZURE_SOURCE_DATA_TENANT_ID=
