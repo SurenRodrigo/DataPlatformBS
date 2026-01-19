@@ -21,6 +21,7 @@ class ExcelToDbWriter:
     - Field mapping from Excel columns to table columns
     - Automatic type conversion based on inferred table schema
     - Support for PostgreSQL and MSSQL databases
+    - Support for Entra ID Service Principal authentication (MSSQL/Azure SQL)
     - Strict validation with fail-fast error handling
     """
     
@@ -37,7 +38,8 @@ class ExcelToDbWriter:
             dbms_type: Database type - "postgresql" or "mssql"
             connection_config: Dictionary with connection parameters
                 PostgreSQL: {"host", "port", "database", "username", "password", "schema" (optional)}
-                MSSQL: {"server", "database", "username", "password", "schema" (optional)}
+                MSSQL SQL Auth: {"server", "database", "username", "password", "port" (optional), "schema" (optional)}
+                MSSQL Entra ID: {"server", "database", "client_id", "client_secret", "tenant_id", "port" (optional), "schema" (optional)}
             field_mapping: Optional dictionary mapping Excel column names to table column names
                 Example: {"Excel_Column": "table_column", "Customer Name": "customer_name"}
         
@@ -90,15 +92,23 @@ class ExcelToDbWriter:
                 raise SQLAlchemyError(f"PostgreSQL engine creation failed: {e}")
         
         elif self.dbms_type == "mssql":
-            required_keys = ["server", "database", "username", "password"]
-            missing = [k for k in required_keys if k not in self.connection_config]
-            if missing:
-                raise ValueError(f"Missing required MSSQL connection keys: {missing}")
+            # Detect authentication method
+            has_entra_id = all(k in self.connection_config for k in ['client_id', 'client_secret', 'tenant_id'])
+            has_sql_auth = all(k in self.connection_config for k in ['username', 'password'])
+            
+            if not has_entra_id and not has_sql_auth:
+                raise ValueError(
+                    "Invalid MSSQL config: Must provide either Entra ID credentials "
+                    "(client_id, client_secret, tenant_id) or SQL Auth credentials (username, password)"
+                )
+            
+            # Validate required fields
+            if 'server' not in self.connection_config or 'database' not in self.connection_config:
+                raise ValueError("MSSQL config must include 'server' and 'database'")
             
             server = self.connection_config["server"]
             database = self.connection_config["database"]
-            username = self.connection_config["username"]
-            password = self.connection_config["password"]
+            port = self.connection_config.get("port", "1433")
             
             # Try ODBC Driver 18 first, fallback to 17
             drivers_to_try = [
@@ -109,24 +119,63 @@ class ExcelToDbWriter:
             last_error = None
             for driver in drivers_to_try:
                 try:
-                    # URL encode the driver name and credentials for connection string
+                    # URL encode the driver name
                     driver_encoded = quote_plus(driver)
-                    username_encoded = quote_plus(username)
-                    password_encoded = quote_plus(password)
-                    connection_string = (
-                        f"mssql+pyodbc://{username_encoded}:{password_encoded}@{server}/{database}"
-                        f"?driver={driver_encoded}"
-                        f"&TrustServerCertificate=yes"
-                        f"&Connection+Timeout=30"
-                    )
                     
+                    if has_entra_id:
+                        # Entra ID Service Principal Authentication
+                        client_id = self.connection_config['client_id']
+                        client_secret = self.connection_config['client_secret']
+                        tenant_id = self.connection_config['tenant_id']
+                        
+                        # Build connection string for Entra ID
+                        # Format: mssql+pyodbc:///?odbc_connect=<connection_string>
+                        odbc_connect_params = (
+                            f"Driver={{{driver}}};"
+                            f"Server=tcp:{server},{port};"
+                            f"Database={database};"
+                            f"Uid={client_id};"
+                            f"Pwd={client_secret};"
+                            f"Encrypt=yes;"
+                            f"TrustServerCertificate=no;"
+                            f"Connection Timeout=30;"
+                            f"Authentication=ActiveDirectoryServicePrincipal"
+                        )
+                        odbc_connect_encoded = quote_plus(odbc_connect_params)
+                        connection_string = f"mssql+pyodbc:///?odbc_connect={odbc_connect_encoded}"
+                        
+                        auth_method = "Entra ID Service Principal"
+                        logger.info(f"Using Entra ID Service Principal authentication for {server}")
+                    
+                    else:
+                        # SQL Authentication
+                        username = self.connection_config['username']
+                        password = self.connection_config['password']
+                        
+                        # URL encode credentials
+                        username_encoded = quote_plus(username)
+                        password_encoded = quote_plus(password)
+                        
+                        connection_string = (
+                            f"mssql+pyodbc://{username_encoded}:{password_encoded}@{server}/{database}"
+                            f"?driver={driver_encoded}"
+                            f"&TrustServerCertificate=yes"
+                            f"&Connection+Timeout=30"
+                        )
+                        
+                        auth_method = "SQL Authentication"
+                        logger.info(f"Using SQL Authentication for {server}")
+                    
+                    # Create engine
                     engine = create_engine(
                         connection_string,
                         pool_pre_ping=True,
                         fast_executemany=True  # Performance optimization for MSSQL
                     )
-                    logger.info(f"MSSQL engine created for {server}/{database} using {driver}")
+                    
+                    logger.info(f"MSSQL engine created for {server}/{database} using {driver} ({auth_method})")
                     return engine
+                    
                 except Exception as e:
                     last_error = e
                     logger.warning(f"Failed to create MSSQL engine with {driver}: {e}")

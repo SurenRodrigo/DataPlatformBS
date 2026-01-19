@@ -2,15 +2,18 @@
 MSSQL to MSSQL Query and Sync Utility
 
 This module provides functionality to query a source MSSQL database and sync results
-to a destination MSSQL table with checksum-based deduplication and auto-table creation.
+to a destination MSSQL table with checksum-based deduplication and flexible schema handling.
 
 Key Features:
 - Query source MSSQL with custom queries
 - Checksum-based deduplication (SHA256 hash of row values)
-- Auto-create destination table with proper schema
+- Two schema modes:
+  * Auto-create: Infer schema from source data and create table (default)
+  * Existing table: Use predefined table schema with validation (new feature)
 - MERGE/UPSERT operations to handle inserts, updates, and duplicates
 - Support for both SQL Authentication and Entra ID Service Principal
 - Configurable record-level error handling
+- Streaming/chunked processing for large datasets with concurrent workers
 
 Author: Data Platform Team
 """
@@ -640,15 +643,16 @@ def _are_types_compatible(type1: str, type2: str) -> bool:
         return True
     
     # Compatible numeric types
-    numeric_groups = [
-        {'TINYINT', 'SMALLINT', 'INT', 'BIGINT'},
-        {'FLOAT', 'REAL', 'DOUBLE'},
-        {'NUMERIC', 'DECIMAL', 'MONEY', 'SMALLMONEY'}
-    ]
+    # For data insertion, all numeric types are generally compatible
+    # (with potential precision loss or rounding, but insertable)
+    all_numeric_types = {
+        'TINYINT', 'SMALLINT', 'INT', 'BIGINT',  # Integer types
+        'FLOAT', 'REAL', 'DOUBLE',                # Floating-point types
+        'NUMERIC', 'DECIMAL', 'MONEY', 'SMALLMONEY'  # Decimal types
+    }
     
-    for group in numeric_groups:
-        if base_type1 in group and base_type2 in group:
-            return True
+    if base_type1 in all_numeric_types and base_type2 in all_numeric_types:
+        return True
     
     # Compatible date/time types
     datetime_types = {'DATETIME', 'DATETIME2', 'SMALLDATETIME', 'DATE', 'TIME'}
@@ -935,6 +939,133 @@ def _execute_merge_operation(
         cursor.close()
 
 
+def _validate_dataframe_against_existing_schema(
+    df: pd.DataFrame,
+    existing_schema: List[Dict[str, Any]],
+    table_name: str
+) -> Dict[str, Any]:
+    """
+    Validate that DataFrame columns are compatible with existing table schema.
+    
+    This function ensures that data from source query can be safely inserted into
+    an existing destination table without schema modifications.
+    
+    Args:
+        df: Source DataFrame from query results
+        existing_schema: Schema from existing table (_get_table_schema result)
+        table_name: Table name for error messages
+    
+    Returns:
+        Dictionary with validation results:
+        {
+            'is_valid': bool,
+            'missing_columns': List[str],  # Columns in table but not in DataFrame
+            'extra_columns': List[str],     # Columns in DataFrame but not in table
+            'type_incompatibilities': List[Dict],  # Type mismatches
+            'nullable_violations': List[str],  # Non-nullable columns with NULL values
+            'issues': List[str]  # Human-readable issue descriptions
+        }
+    """
+    # Build lookup dictionaries
+    existing_cols = {col['name']: col for col in existing_schema}
+    df_cols = set(df.columns)
+    
+    # Exclude metadata columns from validation
+    metadata_columns = ['_sync_checksum', '_sync_updated_at']
+    existing_data_cols = {name for name in existing_cols.keys() if name not in metadata_columns}
+    df_data_cols = {name for name in df_cols if name not in metadata_columns}
+    
+    # Find missing and extra columns
+    missing_columns = list(existing_data_cols - df_data_cols)
+    extra_columns = list(df_data_cols - existing_data_cols)
+    
+    # Check for type incompatibilities in common columns
+    type_incompatibilities = []
+    nullable_violations = []
+    common_columns = existing_data_cols & df_data_cols
+    
+    for col_name in common_columns:
+        existing_col = existing_cols[col_name]
+        df_series = df[col_name]
+        
+        # Infer expected MSSQL type from DataFrame column
+        df_mssql_type = _pandas_dtype_to_mssql(df_series.dtype, df_series, use_max_for_strings=True)
+        existing_type = existing_col['type']
+        
+        # Normalize types for comparison
+        existing_normalized = existing_type.replace(' ', '').upper()
+        df_normalized = df_mssql_type.replace(' ', '').upper()
+        
+        # Check if types are compatible
+        if not _are_types_compatible(existing_normalized, df_normalized):
+            type_incompatibilities.append({
+                'column': col_name,
+                'existing_type': existing_type,
+                'dataframe_type': df_mssql_type,
+                'pandas_dtype': str(df_series.dtype)
+            })
+        
+        # Check nullable constraint violations
+        if not existing_col['nullable']:
+            null_count = df_series.isna().sum()
+            if null_count > 0:
+                nullable_violations.append(
+                    f"{col_name} (NOT NULL constraint, but {null_count} NULL values in data)"
+                )
+    
+    # Build issues list
+    issues = []
+    
+    # Missing columns are OK if they're nullable or have defaults
+    critical_missing = []
+    for col_name in missing_columns:
+        col_meta = existing_cols[col_name]
+        if not col_meta['nullable']:
+            # Check if column has default (would be OK)
+            # For now, we'll flag it as critical
+            critical_missing.append(col_name)
+    
+    if critical_missing:
+        issues.append(
+            f"Critical: DataFrame missing required columns (NOT NULL, no data provided): "
+            f"{', '.join(critical_missing)}"
+        )
+    
+    if extra_columns:
+        issues.append(
+            f"Warning: DataFrame has extra columns not in destination table "
+            f"(will be ignored during insert): {', '.join(extra_columns)}"
+        )
+    
+    if type_incompatibilities:
+        issues.append("Type incompatibilities detected:")
+        for incomp in type_incompatibilities:
+            issues.append(
+                f"  - Column '{incomp['column']}': "
+                f"table expects {incomp['existing_type']}, "
+                f"but data suggests {incomp['dataframe_type']} "
+                f"(pandas dtype: {incomp['pandas_dtype']})"
+            )
+    
+    if nullable_violations:
+        issues.append("NOT NULL constraint violations:")
+        for violation in nullable_violations:
+            issues.append(f"  - {violation}")
+    
+    # Validation passes if no critical issues
+    is_valid = len(critical_missing) == 0 and len(type_incompatibilities) == 0 and len(nullable_violations) == 0
+    
+    return {
+        'is_valid': is_valid,
+        'missing_columns': missing_columns,
+        'critical_missing_columns': critical_missing,
+        'extra_columns': extra_columns,
+        'type_incompatibilities': type_incompatibilities,
+        'nullable_violations': nullable_violations,
+        'issues': issues
+    }
+
+
 def sync_mssql_query_to_mssql(
     source_config: Dict[str, Any],
     source_query: str,
@@ -946,7 +1077,8 @@ def sync_mssql_query_to_mssql(
     validate_row_counts: bool = True,
     chunk_size: int = 1000,
     max_workers: int = 4,
-    use_streaming: bool = True
+    use_streaming: bool = True,
+    use_existing_table_schema: bool = False
 ) -> Dict[str, Any]:
     """
     Query source MSSQL database and sync results to destination MSSQL table.
@@ -955,7 +1087,7 @@ def sync_mssql_query_to_mssql(
     - Streaming/chunked reading for large datasets (millions of records)
     - Concurrent chunk processing using thread pools
     - Checksum-based deduplication
-    - Auto-create destination table
+    - Auto-create destination table OR use existing table schema
     - MERGE/UPSERT operations
     - Support for Entra ID and SQL Authentication
     - Configurable record-level error handling
@@ -973,6 +1105,9 @@ def sync_mssql_query_to_mssql(
         chunk_size: Rows to read per chunk from source (default: 1000, optimized for streaming)
         max_workers: Number of concurrent workers for chunk processing (default: 4)
         use_streaming: If True, stream data in chunks; if False, load all at once (default: True)
+        use_existing_table_schema: If True, use existing table schema and validate source data
+                                   against it; if False, auto-create table with inferred schema
+                                   from source data (default: False for backward compatibility)
     
     Returns:
         Dictionary with sync statistics and status
@@ -981,9 +1116,22 @@ def sync_mssql_query_to_mssql(
         SKIP_ON_DATA_RECORD_LEVEL_ERROR: "true" or "false" (default: "false")
     
     Raises:
-        ValueError: If inputs are invalid
+        ValueError: If inputs are invalid or schema validation fails (when use_existing_table_schema=True)
         ConnectionError: If connection fails
         Exception: If sync fails and skip_on_error=False
+    
+    Schema Modes:
+        1. Auto-create mode (use_existing_table_schema=False, DEFAULT):
+           - Infers schema from source query results
+           - Creates table if it doesn't exist with generous types (BIGINT, NVARCHAR(MAX))
+           - Backward compatible with existing behavior
+        
+        2. Existing table mode (use_existing_table_schema=True, NEW FEATURE):
+           - Requires destination table to exist
+           - Uses existing table schema without modification
+           - Validates source data columns match destination table columns
+           - Validates data types are compatible
+           - Fails fast if validation fails (following Open-Closed Principle)
     
     Performance Notes:
         - For datasets < 10K rows: use_streaming=False is faster
@@ -1101,27 +1249,73 @@ def sync_mssql_query_to_mssql(
                     if not table_created['value']:
                         logger.info(f"[Chunk {chunk_num}] Creating/validating destination table...")
                         
-                        expected_schema = _infer_mssql_schema_from_dataframe(
-                            chunk_df.drop(columns=['_sync_checksum'])
-                        )
                         existing_schema = _get_table_schema(chunk_dest_conn, dest_schema, dest_table)
                         
-                        if existing_schema is None:
-                            _create_destination_table(chunk_dest_conn, dest_schema, dest_table, expected_schema)
-                            logger.info(f"[Chunk {chunk_num}] ✓ Table created successfully")
-                        else:
-                            logger.info(f"[Chunk {chunk_num}] Table exists, validating schema...")
-                            validation_result = _validate_table_schema(existing_schema, expected_schema)
+                        if use_existing_table_schema:
+                            # NEW FEATURE: Use existing table schema mode
+                            logger.info(f"[Chunk {chunk_num}] Mode: Use existing table schema (validation required)")
                             
-                            if not validation_result['is_valid']:
-                                if not validation_result['has_checksum_column']:
-                                    _add_checksum_column_to_table(chunk_dest_conn, dest_schema, dest_table)
+                            if existing_schema is None:
+                                raise ValueError(
+                                    f"use_existing_table_schema=True requires table [{dest_schema}].[{dest_table}] "
+                                    f"to exist, but it was not found. Please create the table first or set "
+                                    f"use_existing_table_schema=False to auto-create."
+                                )
+                            
+                            # Validate source DataFrame against existing table schema
+                            logger.info(f"[Chunk {chunk_num}] Validating source data against existing table schema...")
+                            df_validation = _validate_dataframe_against_existing_schema(
+                                chunk_df.drop(columns=['_sync_checksum']),
+                                existing_schema,
+                                dest_table
+                            )
+                            
+                            if not df_validation['is_valid']:
+                                error_msg = f"Source data validation failed for [{dest_schema}].[{dest_table}]:\n"
+                                for issue in df_validation['issues']:
+                                    error_msg += f"  {issue}\n"
+                                logger.error(error_msg)
+                                raise ValueError(error_msg)
+                            
+                            # Log validation warnings (extra columns are OK, will be ignored)
+                            if df_validation['extra_columns']:
+                                logger.warning(
+                                    f"[Chunk {chunk_num}] Source data has extra columns that will be ignored: "
+                                    f"{', '.join(df_validation['extra_columns'])}"
+                                )
+                            
+                            # Ensure checksum column exists (add if missing)
+                            has_checksum = any(col['name'] == '_sync_checksum' for col in existing_schema)
+                            if not has_checksum:
+                                logger.info(f"[Chunk {chunk_num}] Adding _sync_checksum column to existing table...")
+                                _add_checksum_column_to_table(chunk_dest_conn, dest_schema, dest_table)
+                            
+                            logger.info(f"[Chunk {chunk_num}] ✓ Source data validated successfully against existing schema")
+                        
+                        else:
+                            # DEFAULT BEHAVIOR: Auto-create/infer schema mode (backward compatible)
+                            logger.info(f"[Chunk {chunk_num}] Mode: Auto-create with inferred schema (default)")
+                            
+                            expected_schema = _infer_mssql_schema_from_dataframe(
+                                chunk_df.drop(columns=['_sync_checksum'])
+                            )
+                            
+                            if existing_schema is None:
+                                _create_destination_table(chunk_dest_conn, dest_schema, dest_table, expected_schema)
+                                logger.info(f"[Chunk {chunk_num}] ✓ Table created successfully")
+                            else:
+                                logger.info(f"[Chunk {chunk_num}] Table exists, validating inferred schema...")
+                                validation_result = _validate_table_schema(existing_schema, expected_schema)
                                 
-                                if validation_result['missing_columns'] or validation_result['type_mismatches']:
-                                    error_msg = "Schema incompatibility detected:\n"
-                                    for issue in validation_result['issues']:
-                                        error_msg += f"  - {issue}\n"
-                                    raise ValueError(error_msg)
+                                if not validation_result['is_valid']:
+                                    if not validation_result['has_checksum_column']:
+                                        _add_checksum_column_to_table(chunk_dest_conn, dest_schema, dest_table)
+                                    
+                                    if validation_result['missing_columns'] or validation_result['type_mismatches']:
+                                        error_msg = "Schema incompatibility detected:\n"
+                                        for issue in validation_result['issues']:
+                                            error_msg += f"  - {issue}\n"
+                                        raise ValueError(error_msg)
                         
                         table_created['value'] = True
                 
@@ -1222,6 +1416,7 @@ def sync_mssql_query_to_mssql(
                     'source_query': source_query,
                     'destination': f"{dest_schema}.{dest_table}",
                     'authentication_method': f"source:{source_auth_method}, dest:{temp_auth}",
+                    'schema_mode': 'existing_table' if use_existing_table_schema else 'auto_create',
                     'result': {
                         'rows_queried': 0,
                         'rows_inserted': 0,
@@ -1231,7 +1426,8 @@ def sync_mssql_query_to_mssql(
                         'processing_time_seconds': time.time() - start_time,
                         'checksum_column': '_sync_checksum',
                         'skip_on_error_enabled': skip_on_error,
-                        'streaming_enabled': False
+                        'streaming_enabled': False,
+                        'use_existing_table_schema': use_existing_table_schema
                     }
                 }
             
@@ -1264,6 +1460,7 @@ def sync_mssql_query_to_mssql(
             'source_query': source_query,
             'destination': f"{dest_schema}.{dest_table}",
             'authentication_method': f"source:{source_auth_method}, dest:{dest_auth_method['value']}",
+            'schema_mode': 'existing_table' if use_existing_table_schema else 'auto_create',
             'result': {
                 'rows_queried': total_stats['rows_queried'],
                 'rows_with_checksum_errors': total_stats['checksum_errors'],
@@ -1278,6 +1475,7 @@ def sync_mssql_query_to_mssql(
                 'streaming_enabled': use_streaming,
                 'chunk_size': chunk_size if use_streaming else None,
                 'max_workers': max_workers if use_streaming else None,
+                'use_existing_table_schema': use_existing_table_schema,
                 'error_summary': {
                     'checksum_errors': total_stats['checksum_errors'],
                     'merge_errors': total_stats['rows_skipped'],
@@ -1288,6 +1486,7 @@ def sync_mssql_query_to_mssql(
         
         logger.info("=" * 60)
         logger.info(f"SYNC COMPLETED: {status.upper()}")
+        logger.info(f"Schema mode: {'existing_table (strict validation)' if use_existing_table_schema else 'auto_create (inferred schema)'}")
         logger.info(f"Total rows processed: {total_stats['rows_queried']}")
         logger.info(f"Results: {total_stats['rows_inserted']} inserted, {total_stats['rows_updated']} updated, "
                    f"{total_stats['rows_unchanged']} unchanged, {total_stats['rows_skipped']} skipped")
@@ -1304,9 +1503,11 @@ def sync_mssql_query_to_mssql(
             'status': 'error',
             'source_query': source_query,
             'destination': f"{dest_schema}.{dest_table}",
+            'schema_mode': 'existing_table' if use_existing_table_schema else 'auto_create',
             'error': str(e),
             'result': {
-                'processing_time_seconds': round(time.time() - start_time, 2)
+                'processing_time_seconds': round(time.time() - start_time, 2),
+                'use_existing_table_schema': use_existing_table_schema
             }
         }
     

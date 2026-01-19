@@ -7,6 +7,7 @@ Tests cover:
 - Schema inference
 - Type mapping
 - Error handling (skip vs fail-fast modes)
+- Existing table schema validation (use_existing_table_schema feature)
 """
 
 import unittest
@@ -25,6 +26,7 @@ from pyairbyte.utils.mssql_to_mssql_sync import (
     _pandas_dtype_to_mssql,
     _infer_mssql_schema_from_dataframe,
     _validate_table_schema,
+    _validate_dataframe_against_existing_schema,
     _are_types_compatible,
     PANDAS_TO_MSSQL_TYPE_MAP
 )
@@ -484,6 +486,255 @@ class TestTypeCompatibility(unittest.TestCase):
         self.assertFalse(_are_types_compatible('INT', 'NVARCHAR(50)'))
         self.assertFalse(_are_types_compatible('DATETIME', 'INT'))
         self.assertFalse(_are_types_compatible('BIT', 'FLOAT'))
+
+
+class TestExistingTableSchemaValidation(unittest.TestCase):
+    """
+    Test the use_existing_table_schema feature.
+    
+    This feature validates source DataFrame against an existing table schema
+    instead of auto-creating the table with inferred schema.
+    """
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        # Sample existing table schema (as returned by _get_table_schema)
+        self.existing_schema = [
+            {'name': 'id', 'type': 'INT', 'nullable': False, 'max_length': None},
+            {'name': 'name', 'type': 'NVARCHAR(100)', 'nullable': False, 'max_length': 100},
+            {'name': 'amount', 'type': 'DECIMAL(18,2)', 'nullable': True, 'max_length': None},
+            {'name': 'created_at', 'type': 'DATETIME2', 'nullable': True, 'max_length': None},
+            {'name': '_sync_checksum', 'type': 'VARCHAR(64)', 'nullable': True, 'max_length': 64},
+            {'name': '_sync_updated_at', 'type': 'DATETIME2', 'nullable': True, 'max_length': None}
+        ]
+    
+    def test_valid_dataframe_matches_schema(self):
+        """Test validation passes when DataFrame matches existing schema."""
+        df = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Alice', 'Bob', 'Charlie'],
+            'amount': [100.50, 200.75, 300.00],
+            'created_at': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
+        })
+        
+        result = _validate_dataframe_against_existing_schema(df, self.existing_schema, 'test_table')
+        
+        self.assertTrue(result['is_valid'])
+        self.assertEqual(len(result['critical_missing_columns']), 0)
+        self.assertEqual(len(result['type_incompatibilities']), 0)
+        self.assertEqual(len(result['nullable_violations']), 0)
+    
+    def test_missing_required_column_fails(self):
+        """Test validation fails when DataFrame is missing a required (NOT NULL) column."""
+        # DataFrame missing 'name' which is NOT NULL in existing schema
+        df = pd.DataFrame({
+            'id': [1, 2, 3],
+            'amount': [100.50, 200.75, 300.00],
+            'created_at': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
+        })
+        
+        result = _validate_dataframe_against_existing_schema(df, self.existing_schema, 'test_table')
+        
+        self.assertFalse(result['is_valid'])
+        self.assertIn('name', result['critical_missing_columns'])
+        self.assertTrue(any('name' in issue for issue in result['issues']))
+    
+    def test_missing_nullable_column_ok(self):
+        """Test validation passes when DataFrame is missing a nullable column."""
+        # DataFrame missing 'amount' which is nullable in existing schema
+        df = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Alice', 'Bob', 'Charlie'],
+            'created_at': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
+        })
+        
+        result = _validate_dataframe_against_existing_schema(df, self.existing_schema, 'test_table')
+        
+        # Should be valid because 'amount' is nullable
+        self.assertTrue(result['is_valid'])
+        self.assertIn('amount', result['missing_columns'])
+        self.assertNotIn('amount', result['critical_missing_columns'])
+    
+    def test_extra_columns_in_dataframe_ok(self):
+        """Test validation passes when DataFrame has extra columns not in table."""
+        df = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Alice', 'Bob', 'Charlie'],
+            'amount': [100.50, 200.75, 300.00],
+            'created_at': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03']),
+            'extra_col1': ['x', 'y', 'z'],
+            'extra_col2': [True, False, True]
+        })
+        
+        result = _validate_dataframe_against_existing_schema(df, self.existing_schema, 'test_table')
+        
+        # Extra columns don't cause validation failure (they'll be ignored during insert)
+        self.assertTrue(result['is_valid'])
+        self.assertIn('extra_col1', result['extra_columns'])
+        self.assertIn('extra_col2', result['extra_columns'])
+        # But there should be a warning in issues
+        self.assertTrue(any('extra columns' in issue.lower() for issue in result['issues']))
+    
+    def test_type_incompatibility_fails(self):
+        """Test validation fails when DataFrame column type is incompatible."""
+        # 'id' should be INT but DataFrame has strings
+        df = pd.DataFrame({
+            'id': ['one', 'two', 'three'],  # String instead of INT
+            'name': ['Alice', 'Bob', 'Charlie'],
+            'amount': [100.50, 200.75, 300.00],
+            'created_at': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
+        })
+        
+        result = _validate_dataframe_against_existing_schema(df, self.existing_schema, 'test_table')
+        
+        self.assertFalse(result['is_valid'])
+        self.assertTrue(len(result['type_incompatibilities']) > 0)
+        
+        # Find the 'id' type incompatibility
+        id_incomp = next((t for t in result['type_incompatibilities'] if t['column'] == 'id'), None)
+        self.assertIsNotNone(id_incomp)
+        self.assertEqual(id_incomp['existing_type'], 'INT')
+    
+    def test_null_constraint_violation_fails(self):
+        """Test validation fails when NOT NULL column has NULL values."""
+        # 'name' is NOT NULL but DataFrame has NULL values
+        df = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Alice', None, 'Charlie'],  # NULL in NOT NULL column
+            'amount': [100.50, 200.75, 300.00],
+            'created_at': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
+        })
+        
+        result = _validate_dataframe_against_existing_schema(df, self.existing_schema, 'test_table')
+        
+        self.assertFalse(result['is_valid'])
+        self.assertTrue(len(result['nullable_violations']) > 0)
+        self.assertTrue(any('name' in v for v in result['nullable_violations']))
+    
+    def test_multiple_issues_detected(self):
+        """Test that multiple validation issues are all detected."""
+        # DataFrame with multiple problems:
+        # - Missing required 'name' column
+        # - 'id' has wrong type (string)
+        # - Extra column
+        df = pd.DataFrame({
+            'id': ['one', 'two', 'three'],  # Wrong type
+            'amount': [100.50, 200.75, 300.00],
+            'extra': [1, 2, 3]  # Extra column
+            # Missing: 'name' (required), 'created_at' (optional)
+        })
+        
+        result = _validate_dataframe_against_existing_schema(df, self.existing_schema, 'test_table')
+        
+        self.assertFalse(result['is_valid'])
+        self.assertIn('name', result['critical_missing_columns'])
+        self.assertTrue(len(result['type_incompatibilities']) > 0)
+        self.assertIn('extra', result['extra_columns'])
+        
+        # Should have multiple issues reported
+        self.assertTrue(len(result['issues']) >= 2)
+    
+    def test_metadata_columns_excluded(self):
+        """Test that _sync_checksum and _sync_updated_at are excluded from validation."""
+        # DataFrame without metadata columns (these are added by the sync process)
+        df = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Alice', 'Bob', 'Charlie'],
+            'amount': [100.50, 200.75, 300.00],
+            'created_at': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
+        })
+        
+        result = _validate_dataframe_against_existing_schema(df, self.existing_schema, 'test_table')
+        
+        # Should be valid - metadata columns are excluded from validation
+        self.assertTrue(result['is_valid'])
+        # Metadata columns should NOT be in missing columns
+        self.assertNotIn('_sync_checksum', result['missing_columns'])
+        self.assertNotIn('_sync_updated_at', result['missing_columns'])
+    
+    def test_compatible_numeric_types(self):
+        """Test that compatible numeric types pass validation."""
+        # 'id' is INT in table, DataFrame has int64 (maps to BIGINT)
+        # INT and BIGINT are compatible numeric types
+        df = pd.DataFrame({
+            'id': pd.array([1, 2, 3], dtype='int64'),
+            'name': ['Alice', 'Bob', 'Charlie'],
+            'amount': [100.50, 200.75, 300.00],
+            'created_at': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
+        })
+        
+        result = _validate_dataframe_against_existing_schema(df, self.existing_schema, 'test_table')
+        
+        # BIGINT -> INT should be compatible
+        self.assertTrue(result['is_valid'])
+
+
+class TestSyncFunctionWithExistingSchema(unittest.TestCase):
+    """Test the sync_mssql_query_to_mssql function with use_existing_table_schema parameter."""
+    
+    @patch('pyairbyte.utils.mssql_to_mssql_sync._get_mssql_connection')
+    @patch('pyairbyte.utils.mssql_to_mssql_sync.pd.read_sql')
+    def test_existing_schema_table_not_found_raises_error(self, mock_read_sql, mock_get_conn):
+        """Test that use_existing_table_schema=True fails if table doesn't exist."""
+        from pyairbyte.utils.mssql_to_mssql_sync import sync_mssql_query_to_mssql, _get_table_schema
+        
+        # Mock connections
+        mock_source_conn = Mock()
+        mock_dest_conn = Mock()
+        mock_get_conn.side_effect = [
+            (mock_source_conn, 'sql_auth'),
+            (mock_dest_conn, 'sql_auth')
+        ]
+        
+        # Mock source query returns valid data
+        mock_df = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Alice', 'Bob', 'Charlie']
+        })
+        mock_read_sql.return_value = mock_df
+        
+        # Mock destination table doesn't exist
+        mock_cursor = Mock()
+        mock_cursor.fetchone.return_value = [0]  # Table doesn't exist
+        mock_dest_conn.cursor.return_value = mock_cursor
+        
+        source_config = {
+            'server': 'source', 'database': 'db',
+            'username': 'user', 'password': 'pass'
+        }
+        dest_config = {
+            'server': 'dest', 'database': 'db',
+            'username': 'user', 'password': 'pass'
+        }
+        
+        # Should fail because table doesn't exist
+        with patch('pyairbyte.utils.mssql_to_mssql_sync._get_table_schema', return_value=None):
+            result = sync_mssql_query_to_mssql(
+                source_config=source_config,
+                source_query="SELECT id, name FROM test",
+                dest_config=dest_config,
+                dest_schema="dbo",
+                dest_table="nonexistent_table",
+                use_streaming=False,
+                use_existing_table_schema=True  # NEW PARAMETER
+            )
+        
+        # Should return error status
+        self.assertEqual(result['status'], 'error')
+        self.assertIn('use_existing_table_schema', result['error'])
+    
+    def test_sync_function_default_backward_compatible(self):
+        """Test that default behavior (use_existing_table_schema=False) is backward compatible."""
+        from pyairbyte.utils.mssql_to_mssql_sync import sync_mssql_query_to_mssql
+        import inspect
+        
+        # Check function signature
+        sig = inspect.signature(sync_mssql_query_to_mssql)
+        params = sig.parameters
+        
+        # Verify use_existing_table_schema has default value of False
+        self.assertIn('use_existing_table_schema', params)
+        self.assertEqual(params['use_existing_table_schema'].default, False)
 
 
 def run_tests():
