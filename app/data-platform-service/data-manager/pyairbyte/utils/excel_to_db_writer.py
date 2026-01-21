@@ -446,26 +446,33 @@ class ExcelToDbWriter:
                         }
                 
                 elif self.dbms_type == "mssql":
+                    # Use sys.columns joined with INFORMATION_SCHEMA to get identity info
+                    # IS_IDENTITY is not available in INFORMATION_SCHEMA.COLUMNS for SQL Server
                     query = text("""
                         SELECT 
-                            COLUMN_NAME,
-                            DATA_TYPE,
-                            CHARACTER_MAXIMUM_LENGTH,
-                            NUMERIC_PRECISION,
-                            NUMERIC_SCALE,
-                            IS_NULLABLE,
-                            ORDINAL_POSITION,
-                            COLUMN_DEFAULT,
-                            IS_IDENTITY
-                        FROM INFORMATION_SCHEMA.COLUMNS
-                        WHERE TABLE_SCHEMA = :schema_name AND TABLE_NAME = :table_name
-                        ORDER BY ORDINAL_POSITION
+                            isc.COLUMN_NAME,
+                            isc.DATA_TYPE,
+                            isc.CHARACTER_MAXIMUM_LENGTH,
+                            isc.NUMERIC_PRECISION,
+                            isc.NUMERIC_SCALE,
+                            isc.IS_NULLABLE,
+                            isc.ORDINAL_POSITION,
+                            isc.COLUMN_DEFAULT,
+                            CAST(COLUMNPROPERTY(OBJECT_ID(:full_table_name), isc.COLUMN_NAME, 'IsIdentity') AS BIT) AS IS_IDENTITY
+                        FROM INFORMATION_SCHEMA.COLUMNS isc
+                        WHERE isc.TABLE_SCHEMA = :schema_name AND isc.TABLE_NAME = :table_name
+                        ORDER BY isc.ORDINAL_POSITION
                     """)
-                    result = conn.execute(query, {"schema_name": schema_name, "table_name": table_name})
+                    full_table_name = f"{schema_name}.{table_name}"
+                    result = conn.execute(query, {
+                        "schema_name": schema_name, 
+                        "table_name": table_name,
+                        "full_table_name": full_table_name
+                    })
                     
                     for row in result:
                         column_default = row.COLUMN_DEFAULT
-                        is_identity = getattr(row, "IS_IDENTITY", "NO") == "YES"
+                        is_identity = bool(row.IS_IDENTITY) if row.IS_IDENTITY is not None else False
                         has_default = column_default is not None
                         is_auto_increment = is_identity
 
@@ -792,8 +799,9 @@ class ExcelToDbWriter:
                         lambda x: x.date() if pd.notna(x) else None
                     )
                 
-                elif data_type in ["TIMESTAMP", "DATETIME", "TIMESTAMP WITH TIME ZONE"]:
-                    # Timestamp type
+                elif data_type in ["TIMESTAMP", "DATETIME", "DATETIME2", "SMALLDATETIME", 
+                                   "DATETIMEOFFSET", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITHOUT TIME ZONE"]:
+                    # Timestamp/DateTime types (includes SQL Server DATETIME2, SMALLDATETIME, DATETIMEOFFSET)
                     converted_df[col_name] = pd.to_datetime(converted_df[col_name], errors='coerce' if is_nullable else 'raise')
                 
                 elif data_type in ["BOOLEAN", "BIT"]:

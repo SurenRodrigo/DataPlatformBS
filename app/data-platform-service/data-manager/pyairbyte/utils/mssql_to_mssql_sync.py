@@ -1078,7 +1078,9 @@ def sync_mssql_query_to_mssql(
     chunk_size: int = 1000,
     max_workers: int = 4,
     use_streaming: bool = True,
-    use_existing_table_schema: bool = False
+    use_existing_table_schema: bool = False,
+    connection_retry_count: int = 3,
+    connection_retry_delay: float = 5.0
 ) -> Dict[str, Any]:
     """
     Query source MSSQL database and sync results to destination MSSQL table.
@@ -1092,6 +1094,7 @@ def sync_mssql_query_to_mssql(
     - Support for Entra ID and SQL Authentication
     - Configurable record-level error handling
     - Progress tracking for long-running operations
+    - Connection retry logic for transient failures (Azure SQL resilience)
     
     Args:
         source_config: Source connection config (Entra ID or SQL Auth)
@@ -1108,6 +1111,8 @@ def sync_mssql_query_to_mssql(
         use_existing_table_schema: If True, use existing table schema and validate source data
                                    against it; if False, auto-create table with inferred schema
                                    from source data (default: False for backward compatibility)
+        connection_retry_count: Number of retries for connection failures (default: 3)
+        connection_retry_delay: Delay in seconds between retries (default: 5.0)
     
     Returns:
         Dictionary with sync statistics and status
@@ -1192,7 +1197,7 @@ def sync_mssql_query_to_mssql(
         
         def process_chunk(chunk_df: pd.DataFrame, chunk_num: int) -> Dict[str, int]:
             """
-            Process a single chunk of data.
+            Process a single chunk of data with connection retry logic.
             
             Thread-Safety Pattern (Industry Standard):
             - pyodbc connections have threadsafety level 1 (module is thread-safe, 
@@ -1201,6 +1206,11 @@ def sync_mssql_query_to_mssql(
             - This prevents "Connection is busy with results for another command" errors
             - Connections are opened at chunk start and closed in finally block
             
+            Connection Retry Logic:
+            - On transient connection failures (08S01, Communication link failure, etc.),
+              the chunk processing is retried up to connection_retry_count times
+            - This handles Azure SQL connection resets and timeouts gracefully
+            
             References:
             - pyodbc wiki: "connections and cursors may not be used simultaneously by multiple threads"
             - ThreadPoolExecutor best practice: separate DB connections per worker thread
@@ -1208,147 +1218,212 @@ def sync_mssql_query_to_mssql(
             chunk_start = time.time()
             chunk_size_actual = len(chunk_df)
             
-            logger.info(f"[Chunk {chunk_num}] Processing {chunk_size_actual} rows...")
+            # Connection error codes that should trigger a retry
+            retryable_error_codes = ['08S01', '08001', '08007', 'HYT00', 'HY000']
+            retryable_error_messages = [
+                'Communication link failure',
+                'TCP Provider',
+                'Connection reset',
+                'Connection was closed',
+                'Login timeout',
+                'connection timed out'
+            ]
             
-            # Create thread-local destination connection
-            chunk_dest_conn = None
+            def is_retryable_error(error: Exception) -> bool:
+                """Check if the error is a transient connection error that should be retried."""
+                error_str = str(error)
+                # Check for known retryable ODBC error codes
+                for code in retryable_error_codes:
+                    if code in error_str:
+                        return True
+                # Check for known retryable error messages
+                for msg in retryable_error_messages:
+                    if msg.lower() in error_str.lower():
+                        return True
+                return False
             
-            try:
-                # CRITICAL: Each thread gets its own connection (pyodbc is NOT thread-safe)
-                # Sharing a connection across threads causes: "Connection is busy with results for another command"
-                chunk_dest_conn, chunk_auth_method = _get_mssql_connection(dest_config)
+            last_error = None
+            
+            for attempt in range(1, connection_retry_count + 1):
+                if attempt > 1:
+                    logger.info(f"[Chunk {chunk_num}] Retry attempt {attempt}/{connection_retry_count}")
+                else:
+                    logger.info(f"[Chunk {chunk_num}] Processing {chunk_size_actual} rows...")
                 
-                # Store auth method once (thread-safe)
-                with dest_auth_method['lock']:
-                    if dest_auth_method['value'] is None:
-                        dest_auth_method['value'] = chunk_auth_method
+                # Create thread-local destination connection
+                chunk_dest_conn = None
                 
-                # Generate checksums for this chunk using vectorized apply (faster than iterrows)
-                checksum_columns = merge_key_columns if merge_key_columns else list(chunk_df.columns)
-                chunk_checksum_errors = 0
-                
-                def generate_checksum_for_row(row):
-                    """Generate checksum for a single row (used with apply)."""
-                    nonlocal chunk_checksum_errors
-                    checksum = _generate_row_checksum(row, checksum_columns, skip_on_error)
-                    if checksum is None:
-                        chunk_checksum_errors += 1
-                    return checksum
-                
-                # Use apply() which is faster than iterrows() for this operation
-                chunk_df = chunk_df.copy()  # Avoid SettingWithCopyWarning
-                chunk_df['_sync_checksum'] = chunk_df.apply(generate_checksum_for_row, axis=1)
-                
-                # Filter out rows with failed checksums if skip_on_error
-                if skip_on_error and chunk_checksum_errors > 0:
-                    chunk_df = chunk_df[chunk_df['_sync_checksum'].notna()]
-                    logger.warning(f"[Chunk {chunk_num}] Skipped {chunk_checksum_errors} rows with checksum errors")
-                
-                # Create/validate table (only once, thread-safe)
-                with table_created['lock']:
-                    if not table_created['value']:
-                        logger.info(f"[Chunk {chunk_num}] Creating/validating destination table...")
-                        
-                        existing_schema = _get_table_schema(chunk_dest_conn, dest_schema, dest_table)
-                        
-                        if use_existing_table_schema:
-                            # NEW FEATURE: Use existing table schema mode
-                            logger.info(f"[Chunk {chunk_num}] Mode: Use existing table schema (validation required)")
+                try:
+                    # CRITICAL: Each thread gets its own connection (pyodbc is NOT thread-safe)
+                    # Sharing a connection across threads causes: "Connection is busy with results for another command"
+                    chunk_dest_conn, chunk_auth_method = _get_mssql_connection(dest_config)
+                    
+                    # Store auth method once (thread-safe)
+                    with dest_auth_method['lock']:
+                        if dest_auth_method['value'] is None:
+                            dest_auth_method['value'] = chunk_auth_method
+                    
+                    # Generate checksums for this chunk using vectorized apply (faster than iterrows)
+                    checksum_columns = merge_key_columns if merge_key_columns else list(chunk_df.columns)
+                    chunk_checksum_errors = 0
+                    
+                    def generate_checksum_for_row(row):
+                        """Generate checksum for a single row (used with apply)."""
+                        nonlocal chunk_checksum_errors
+                        checksum = _generate_row_checksum(row, checksum_columns, skip_on_error)
+                        if checksum is None:
+                            chunk_checksum_errors += 1
+                        return checksum
+                    
+                    # Use apply() which is faster than iterrows() for this operation
+                    chunk_df_copy = chunk_df.copy()  # Avoid SettingWithCopyWarning
+                    chunk_df_copy['_sync_checksum'] = chunk_df_copy.apply(generate_checksum_for_row, axis=1)
+                    
+                    # Filter out rows with failed checksums if skip_on_error
+                    if skip_on_error and chunk_checksum_errors > 0:
+                        chunk_df_copy = chunk_df_copy[chunk_df_copy['_sync_checksum'].notna()]
+                        logger.warning(f"[Chunk {chunk_num}] Skipped {chunk_checksum_errors} rows with checksum errors")
+                    
+                    # Create/validate table (only once, thread-safe)
+                    with table_created['lock']:
+                        if not table_created['value']:
+                            logger.info(f"[Chunk {chunk_num}] Creating/validating destination table...")
                             
-                            if existing_schema is None:
-                                raise ValueError(
-                                    f"use_existing_table_schema=True requires table [{dest_schema}].[{dest_table}] "
-                                    f"to exist, but it was not found. Please create the table first or set "
-                                    f"use_existing_table_schema=False to auto-create."
-                                )
+                            existing_schema = _get_table_schema(chunk_dest_conn, dest_schema, dest_table)
                             
-                            # Validate source DataFrame against existing table schema
-                            logger.info(f"[Chunk {chunk_num}] Validating source data against existing table schema...")
-                            df_validation = _validate_dataframe_against_existing_schema(
-                                chunk_df.drop(columns=['_sync_checksum']),
-                                existing_schema,
-                                dest_table
-                            )
-                            
-                            if not df_validation['is_valid']:
-                                error_msg = f"Source data validation failed for [{dest_schema}].[{dest_table}]:\n"
-                                for issue in df_validation['issues']:
-                                    error_msg += f"  {issue}\n"
-                                logger.error(error_msg)
-                                raise ValueError(error_msg)
-                            
-                            # Log validation warnings (extra columns are OK, will be ignored)
-                            if df_validation['extra_columns']:
-                                logger.warning(
-                                    f"[Chunk {chunk_num}] Source data has extra columns that will be ignored: "
-                                    f"{', '.join(df_validation['extra_columns'])}"
-                                )
-                            
-                            # Ensure checksum column exists (add if missing)
-                            has_checksum = any(col['name'] == '_sync_checksum' for col in existing_schema)
-                            if not has_checksum:
-                                logger.info(f"[Chunk {chunk_num}] Adding _sync_checksum column to existing table...")
-                                _add_checksum_column_to_table(chunk_dest_conn, dest_schema, dest_table)
-                            
-                            logger.info(f"[Chunk {chunk_num}] ✓ Source data validated successfully against existing schema")
-                        
-                        else:
-                            # DEFAULT BEHAVIOR: Auto-create/infer schema mode (backward compatible)
-                            logger.info(f"[Chunk {chunk_num}] Mode: Auto-create with inferred schema (default)")
-                            
-                            expected_schema = _infer_mssql_schema_from_dataframe(
-                                chunk_df.drop(columns=['_sync_checksum'])
-                            )
-                            
-                            if existing_schema is None:
-                                _create_destination_table(chunk_dest_conn, dest_schema, dest_table, expected_schema)
-                                logger.info(f"[Chunk {chunk_num}] ✓ Table created successfully")
-                            else:
-                                logger.info(f"[Chunk {chunk_num}] Table exists, validating inferred schema...")
-                                validation_result = _validate_table_schema(existing_schema, expected_schema)
+                            if use_existing_table_schema:
+                                # NEW FEATURE: Use existing table schema mode
+                                logger.info(f"[Chunk {chunk_num}] Mode: Use existing table schema (validation required)")
                                 
-                                if not validation_result['is_valid']:
-                                    if not validation_result['has_checksum_column']:
-                                        _add_checksum_column_to_table(chunk_dest_conn, dest_schema, dest_table)
+                                if existing_schema is None:
+                                    raise ValueError(
+                                        f"use_existing_table_schema=True requires table [{dest_schema}].[{dest_table}] "
+                                        f"to exist, but it was not found. Please create the table first or set "
+                                        f"use_existing_table_schema=False to auto-create."
+                                    )
+                                
+                                # Validate source DataFrame against existing table schema
+                                logger.info(f"[Chunk {chunk_num}] Validating source data against existing table schema...")
+                                df_validation = _validate_dataframe_against_existing_schema(
+                                    chunk_df_copy.drop(columns=['_sync_checksum']),
+                                    existing_schema,
+                                    dest_table
+                                )
+                                
+                                if not df_validation['is_valid']:
+                                    error_msg = f"Source data validation failed for [{dest_schema}].[{dest_table}]:\n"
+                                    for issue in df_validation['issues']:
+                                        error_msg += f"  {issue}\n"
+                                    logger.error(error_msg)
+                                    raise ValueError(error_msg)
+                                
+                                # Log validation warnings (extra columns are OK, will be ignored)
+                                if df_validation['extra_columns']:
+                                    logger.warning(
+                                        f"[Chunk {chunk_num}] Source data has extra columns that will be ignored: "
+                                        f"{', '.join(df_validation['extra_columns'])}"
+                                    )
+                                
+                                # Ensure checksum column exists (add if missing)
+                                has_checksum = any(col['name'] == '_sync_checksum' for col in existing_schema)
+                                if not has_checksum:
+                                    logger.info(f"[Chunk {chunk_num}] Adding _sync_checksum column to existing table...")
+                                    _add_checksum_column_to_table(chunk_dest_conn, dest_schema, dest_table)
+                                
+                                logger.info(f"[Chunk {chunk_num}] ✓ Source data validated successfully against existing schema")
+                            
+                            else:
+                                # DEFAULT BEHAVIOR: Auto-create/infer schema mode (backward compatible)
+                                logger.info(f"[Chunk {chunk_num}] Mode: Auto-create with inferred schema (default)")
+                                
+                                expected_schema = _infer_mssql_schema_from_dataframe(
+                                    chunk_df_copy.drop(columns=['_sync_checksum'])
+                                )
+                                
+                                if existing_schema is None:
+                                    _create_destination_table(chunk_dest_conn, dest_schema, dest_table, expected_schema)
+                                    logger.info(f"[Chunk {chunk_num}] ✓ Table created successfully")
+                                else:
+                                    logger.info(f"[Chunk {chunk_num}] Table exists, validating inferred schema...")
+                                    validation_result = _validate_table_schema(existing_schema, expected_schema)
                                     
-                                    if validation_result['missing_columns'] or validation_result['type_mismatches']:
-                                        error_msg = "Schema incompatibility detected:\n"
-                                        for issue in validation_result['issues']:
-                                            error_msg += f"  - {issue}\n"
-                                        raise ValueError(error_msg)
-                        
-                        table_created['value'] = True
+                                    if not validation_result['is_valid']:
+                                        if not validation_result['has_checksum_column']:
+                                            _add_checksum_column_to_table(chunk_dest_conn, dest_schema, dest_table)
+                                        
+                                        if validation_result['missing_columns'] or validation_result['type_mismatches']:
+                                            error_msg = "Schema incompatibility detected:\n"
+                                            for issue in validation_result['issues']:
+                                                error_msg += f"  - {issue}\n"
+                                            raise ValueError(error_msg)
+                            
+                            table_created['value'] = True
+                    
+                    # Execute MERGE operation for this chunk (using thread-local connection)
+                    merge_result = _execute_merge_operation(
+                        chunk_dest_conn,
+                        dest_schema,
+                        dest_table,
+                        chunk_df_copy,
+                        merge_key_columns,
+                        skip_on_error
+                    )
+                    
+                    chunk_time = time.time() - chunk_start
+                    logger.info(
+                        f"[Chunk {chunk_num}] ✓ Completed in {chunk_time:.2f}s: "
+                        f"{merge_result['inserted']} inserted, {merge_result['updated']} updated, "
+                        f"{merge_result['unchanged']} unchanged, {merge_result['skipped']} skipped"
+                    )
+                    
+                    # Success - return the result
+                    return {
+                        'rows_queried': chunk_size_actual,
+                        'rows_inserted': merge_result['inserted'],
+                        'rows_updated': merge_result['updated'],
+                        'rows_unchanged': merge_result['unchanged'],
+                        'rows_skipped': merge_result['skipped'],
+                        'checksum_errors': chunk_checksum_errors
+                    }
                 
-                # Execute MERGE operation for this chunk (using thread-local connection)
-                merge_result = _execute_merge_operation(
-                    chunk_dest_conn,
-                    dest_schema,
-                    dest_table,
-                    chunk_df,
-                    merge_key_columns,
-                    skip_on_error
-                )
+                except Exception as e:
+                    last_error = e
+                    
+                    # Check if this is a retryable connection error
+                    if is_retryable_error(e) and attempt < connection_retry_count:
+                        logger.warning(
+                            f"[Chunk {chunk_num}] Connection error on attempt {attempt}/{connection_retry_count}: {e}"
+                        )
+                        logger.info(f"[Chunk {chunk_num}] Retrying in {connection_retry_delay} seconds...")
+                        time.sleep(connection_retry_delay)
+                        continue  # Retry the chunk
+                    
+                    # Not retryable or max retries exceeded
+                    logger.error(f"[Chunk {chunk_num}] Failed after {attempt} attempt(s): {e}")
+                    if not skip_on_error:
+                        raise
+                    return {
+                        'rows_queried': chunk_size_actual,
+                        'rows_inserted': 0,
+                        'rows_updated': 0,
+                        'rows_unchanged': 0,
+                        'rows_skipped': chunk_size_actual,
+                        'checksum_errors': 0
+                    }
                 
-                chunk_time = time.time() - chunk_start
-                logger.info(
-                    f"[Chunk {chunk_num}] ✓ Completed in {chunk_time:.2f}s: "
-                    f"{merge_result['inserted']} inserted, {merge_result['updated']} updated, "
-                    f"{merge_result['unchanged']} unchanged, {merge_result['skipped']} skipped"
-                )
-                
-                return {
-                    'rows_queried': chunk_size_actual,
-                    'rows_inserted': merge_result['inserted'],
-                    'rows_updated': merge_result['updated'],
-                    'rows_unchanged': merge_result['unchanged'],
-                    'rows_skipped': merge_result['skipped'],
-                    'checksum_errors': chunk_checksum_errors
-                }
+                finally:
+                    # Always close thread-local connection
+                    if chunk_dest_conn:
+                        try:
+                            chunk_dest_conn.close()
+                        except:
+                            pass
             
-            except Exception as e:
-                logger.error(f"[Chunk {chunk_num}] Failed: {e}")
+            # If we reach here, all retries were exhausted with retryable errors
+            if last_error:
+                logger.error(f"[Chunk {chunk_num}] All {connection_retry_count} retry attempts exhausted")
                 if not skip_on_error:
-                    raise
+                    raise last_error
                 return {
                     'rows_queried': chunk_size_actual,
                     'rows_inserted': 0,
@@ -1358,13 +1433,15 @@ def sync_mssql_query_to_mssql(
                     'checksum_errors': 0
                 }
             
-            finally:
-                # Always close thread-local connection
-                if chunk_dest_conn:
-                    try:
-                        chunk_dest_conn.close()
-                    except:
-                        pass
+            # Should not reach here, but return empty result as fallback
+            return {
+                'rows_queried': chunk_size_actual,
+                'rows_inserted': 0,
+                'rows_updated': 0,
+                'rows_unchanged': 0,
+                'rows_skipped': chunk_size_actual,
+                'checksum_errors': 0
+            }
         
         # Step 4: Execute query and process data
         logger.info("=" * 60)
