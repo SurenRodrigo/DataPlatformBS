@@ -6,7 +6,7 @@
 3. [Step-by-Step Removal Process](#step-by-step-removal-process)
 4. [Verification Commands](#verification-commands)
 5. [Troubleshooting](#troubleshooting)
-6. [Example: Removing airbyte_sync](#example-removing-airbyte_sync)
+6. [Example: Removing a Code Location](#example-removing-a-code-location)
 7. [Best Practices](#best-practices)
 
 ---
@@ -78,7 +78,7 @@ find app/dagster_code -name "*.pyc" -o -name "__pycache__" | wc -l
 # Should return 0 if cache is properly cleared
 ```
 
-**Why this is critical**: Python cache files can contain references to removed modules, causing import errors and preventing the data-manager service from starting properly.
+**Why this is critical**: Python cache files can contain references to removed modules, causing import errors and preventing the data-platform-service from starting properly.
 
 ### Step 3: Remove Connector Configuration
 
@@ -86,10 +86,10 @@ Remove the connector YAML file associated with the code location:
 
 ```bash
 # Remove the connector configuration
-rm app/data-manager/external-connectors/YOUR_CONNECTOR_NAME.yaml
+rm app/data-platform-service/data-manager/external-connectors/YOUR_CONNECTOR_NAME.yaml
 
 # Verify removal
-ls -la app/data-manager/external-connectors/
+ls -la app/data-platform-service/data-manager/external-connectors/
 ```
 
 ### Step 4: Remove DBT Models
@@ -113,7 +113,7 @@ ls -la app/dbt_models/models/staging/
 
 ### Step 5: Update Code Location Configuration
 
-**Update `app/data-manager/resources/dagster/code-locations.json`**:
+**Update `app/data-platform-service/data-manager/resources/dagster/code-locations.json`**:
 
 Remove the entry for your code location and update the description:
 
@@ -126,7 +126,7 @@ Remove the entry for your code location and update the description:
       "description": "Remaining code location description",
       "module": "dagster_code.remaining_code_location",
       "port": 4268,
-      "host": "data-manager",
+      "host": "data-platform-service",
       "metadata": {
         "team": "data",
         "domain": "remaining_code_location",
@@ -155,8 +155,8 @@ Remove the gRPC server entry for your code location:
 
 load_from:
   - grpc_server:
-      host: data-manager
-      port: 4268
+      host: data-platform-service
+      port: 4273
       location_name: remaining_code_location
       # Remaining code location description
   # ⚠️ REMOVED: your_code_location gRPC server entry
@@ -167,10 +167,10 @@ load_from:
 **Update `app/docker-compose.yaml`** - Remove the port for your code location:
 
 ```yaml
-  data-manager:
+  data-platform-service:
     # ... existing configuration ...
     ports:
-      - "4266:4266"  # gRPC server port
+      - "4273:4273"  # bridgestone_data_sync gRPC server port
       # ⚠️ REMOVED: your_code_location port
 ```
 
@@ -178,11 +178,11 @@ load_from:
 
 ### Step 8: Update Dockerfile (Optional)
 
-**Update `app/Dockerfile.data-manager`** - Remove the port from EXPOSE directive:
+**Update `app/Dockerfile.data-platform-service`** - Remove the port from EXPOSE directive:
 
 ```dockerfile
 # Expose gRPC ports for all code locations
-EXPOSE 4266  # Only expose ports that are actually used
+EXPOSE 4273  # Only expose ports that are actually used
 ```
 
 **Note**: Only remove ports if no other code locations use them.
@@ -193,11 +193,11 @@ If you want to remove all data associated with the code location:
 
 ```bash
 # Connect to database and remove cache tables
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP SCHEMA IF EXISTS pyairbyte_cache CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP SCHEMA IF EXISTS pyairbyte_cache CASCADE;"
 
 # Remove DBT-generated tables (if they exist)
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS staging.staging_YOUR_TABLE CASCADE;"
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS reporting.YOUR_TABLE_reporting CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS staging.staging_YOUR_TABLE CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS reporting.YOUR_TABLE_reporting CASCADE;"
 ```
 
 **⚠️ Warning**: This will permanently delete all data associated with the code location. Only do this if you're sure you want to remove all data.
@@ -205,14 +205,14 @@ docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatus
 ### Step 10: Rebuild and Verify Removal
 
 ```bash
-# Rebuild the data-manager service
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+# Rebuild the data-platform-service
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 
 # Start platform services
 cd platform && ./start.sh
 
 # Verify the code location is no longer loaded
-docker exec data-manager python3 -c "import sys; sys.path.append('/app'); from dagster_code import YOUR_CODE_LOCATION; print('❌ Code location still exists')" 2>/dev/null || echo "✅ Code location successfully removed"
+docker exec data-platform-service python3 -c "import sys; sys.path.append('/app'); from dagster_code import YOUR_CODE_LOCATION; print('❌ Code location still exists')" 2>/dev/null || echo "✅ Code location successfully removed"
 ```
 
 ---
@@ -225,7 +225,7 @@ Test if the removed code location can still be imported:
 
 ```bash
 # This should fail (return non-zero exit code)
-docker exec data-manager python3 -c "import sys; sys.path.append('/app'); from dagster_code import YOUR_CODE_LOCATION; print('❌ Code location still exists')" 2>/dev/null || echo "✅ Code location successfully removed"
+docker exec data-platform-service python3 -c "import sys; sys.path.append('/app'); from dagster_code import YOUR_CODE_LOCATION; print('❌ Code location still exists')" 2>/dev/null || echo "✅ Code location successfully removed"
 ```
 
 ### 2. Remaining Code Locations Test
@@ -234,7 +234,7 @@ Verify that remaining code locations still work:
 
 ```bash
 # Test remaining code locations
-docker exec data-manager python3 -c "from dagster_code.REMAINING_CODE_LOCATION import defs; print(f'✅ Remaining code location loaded - Assets: {len(defs.assets)}, Jobs: {len(defs.jobs)}')"
+docker exec data-platform-service python3 -c "from dagster_code.bridgestone_data_sync import defs; print(f'✅ Remaining code location loaded - Assets: {len(defs.assets)}, Jobs: {len(defs.jobs)}')"
 ```
 
 ### 3. gRPC Server Verification
@@ -243,10 +243,10 @@ Check which gRPC servers are running:
 
 ```bash
 # Check running gRPC servers
-docker exec data-manager ps aux | grep dagster
+docker exec data-platform-service ps aux | grep dagster
 
-# Check data-manager logs
-docker logs data-manager --tail 20
+# Check data-platform-service logs
+docker logs data-platform-service --tail 20
 ```
 
 ### 4. Dagster UI Verification
@@ -264,10 +264,10 @@ Verify database cleanup:
 
 ```bash
 # Check if cache schema exists
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pyairbyte_cache';" 2>/dev/null || echo "Cache schema removed"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pyairbyte_cache';" 2>/dev/null || echo "Cache schema removed"
 
 # Check if DBT tables exist
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'staging' AND table_name = 'staging_YOUR_TABLE';" 2>/dev/null || echo "DBT staging table removed"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'staging' AND table_name = 'staging_YOUR_TABLE';" 2>/dev/null || echo "DBT staging table removed"
 ```
 
 ### 6. Configuration File Verification
@@ -276,7 +276,7 @@ Verify configuration files are updated:
 
 ```bash
 # Check code-locations.json
-cat app/data-manager/resources/dagster/code-locations.json | jq '.code_locations[].name'
+cat app/data-platform-service/data-manager/resources/dagster/code-locations.json | jq '.code_locations[].name'
 
 # Check workspace.yaml
 grep -A 5 "load_from:" platform/workspace.yaml
@@ -294,7 +294,7 @@ Verify files are removed:
 ls -la app/dagster_code/
 
 # Check connector configurations
-ls -la app/data-manager/external-connectors/
+ls -la app/data-platform-service/data-manager/external-connectors/
 
 # Check DBT models
 ls -la app/dbt_models/models/
@@ -315,10 +315,10 @@ ls -la app/dbt_models/models/staging/
 cd platform && ./stop.sh && ./start.sh
 
 # Check if gRPC server is still running
-docker exec data-manager ps aux | grep dagster
+docker exec data-platform-service ps aux | grep dagster
 
-# Force restart data-manager service
-docker compose -f app/docker-compose.yaml restart data-manager
+# Force restart data-platform-service
+docker compose -f app/docker-compose.yaml restart data-platform-service
 ```
 
 ### Issue 2: Import Errors After Removal
@@ -330,11 +330,11 @@ docker compose -f app/docker-compose.yaml restart data-manager
 # Clear Python cache (both locally and in container)
 find app/dagster_code -name "*.pyc" -delete
 find app/dagster_code -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-docker exec data-manager find /app -name "*.pyc" -delete
-docker exec data-manager find /app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+docker exec data-platform-service find /app -name "*.pyc" -delete
+docker exec data-platform-service find /app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
-# Rebuild data-manager service
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+# Rebuild data-platform-service
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 ```
 
 ### Issue 3: Port Conflicts
@@ -344,10 +344,10 @@ docker compose -f app/docker-compose.yaml up -d --build data-manager
 **Solutions**:
 ```bash
 # Check which processes are using the port
-docker exec data-manager netstat -tlnp | grep :4267
+docker exec data-platform-service netstat -tlnp | grep :4273
 
 # Kill any remaining processes
-docker exec data-manager pkill -f "dagster.*4267" || true
+docker exec data-platform-service pkill -f "dagster.*4273" || true
 ```
 
 ### Issue 4: Stale Python Cache After Removal
@@ -364,15 +364,15 @@ find app/dagster_code -name "*.pyc" -delete
 find app/dagster_code -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # Clear Python cache in container
-docker exec data-manager find /app -name "*.pyc" -delete
-docker exec data-manager find /app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+docker exec data-platform-service find /app -name "*.pyc" -delete
+docker exec data-platform-service find /app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # Verify cache is cleared
-find app/dagster_code -name "*.pyc" -o -name "__pycache__" | wc -l
+find app/data-platform-service/dagster_code -name "*.pyc" -o -name "__pycache__" | wc -l
 # Should return 0
 
 # Rebuild and restart services
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 ```
 
 ### Issue 5: gRPC Connection Errors After Removal
@@ -387,10 +387,10 @@ docker compose -f app/docker-compose.yaml up -d --build data-manager
 **Solutions**:
 ```bash
 # Add delay before checking logs or testing connections
-sleep 30 && docker logs data-manager --tail 20
+sleep 30 && docker logs data-platform-service --tail 20
 
 # Wait before testing gRPC server connectivity
-sleep 30 && docker exec data-manager ps aux | grep dagster
+sleep 30 && docker exec data-platform-service ps aux | grep dagster
 
 # Restart platform services with delay
 cd platform && ./stop.sh && sleep 10 && ./start.sh && sleep 45
@@ -400,7 +400,7 @@ cd platform && ./stop.sh && sleep 10 && ./start.sh && sleep 45
 
 **Symptoms**: 
 - `FATAL: database "pyairbyte_cache" does not exist`
-- Data-manager service fails to start due to database connection issues
+- Data-platform-service fails to start due to database connection issues
 - PyAirbyte cache initialization errors
 
 **Root Cause**: The system is trying to connect to a database called `pyairbyte_cache` instead of using the `pyairbyte_cache` schema within the main `dataplatform` database.
@@ -412,55 +412,55 @@ cd platform && ./stop.sh && sleep 10 && ./start.sh && sleep 45
 sed -i 's/PYAIRBYTE_CACHE_DB_NAME=pyairbyte_cache/PYAIRBYTE_CACHE_DB_NAME=dataplatform/' app/.env
 
 # Update cache database manager to create schema instead of database
-# Edit app/data-manager/pyairbyte/utils/cache_db_manager.py
+# Edit app/data-platform-service/data-manager/pyairbyte/utils/cache_db_manager.py
 # Change create_cache_database() method to create schema only
 
 # Update initialization script
-# Edit app/data-manager/scripts/init_cache_db.py
+# Edit app/data-platform-service/data-manager/scripts/init_cache_db.py
 # Change wait_for_database() to connect to main database instead of 'postgres'
 
-# Rebuild data-manager service
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+# Rebuild data-platform-service
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 
 # Verify schema creation
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pyairbyte_cache';"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pyairbyte_cache';"
 ```
 
 ---
 
-## Example: Removing airbyte_sync
+## Example: Removing a Code Location
 
-Here's a complete example of removing the `airbyte_sync` code location:
+Here's a complete example of removing a hypothetical `example_sync` code location:
 
 ### Files and Directories Removed:
 
-1. **Code Location Directory**: `app/dagster_code/airbyte_sync/`
-2. **Connector Configuration**: `app/data-manager/external-connectors/example-faker.yaml`
+1. **Code Location Directory**: `app/data-platform-service/dagster_code/example_sync/`
+2. **Connector Configuration**: `app/data-platform-service/data-manager/external-connectors/example-connector.yaml` (if applicable)
 3. **DBT Models**:
-   - `app/dbt_models/models/pyairbyte_cache_sources.yml`
-   - `app/dbt_models/models/staging/staging_faker_users.sql`
-   - `app/dbt_models/models/faker_users_reporting.sql`
+   - `app/data-platform-service/dbt_models/models/example_sources.yml`
+   - `app/data-platform-service/dbt_models/models/staging/staging_example.sql`
+   - `app/data-platform-service/dbt_models/models/marts/example_mart.sql`
 
 ### Configuration Files Updated:
 
-1. **Code Locations Config**: `app/data-manager/resources/dagster/code-locations.json`
-   - Removed `airbyte_sync` entry
-   - Updated description to reflect only `sample_product_sync`
+1. **Code Locations Config**: `app/data-platform-service/data-manager/resources/dagster/code-locations.json`
+   - Removed `example_sync` entry
+   - Updated description to reflect remaining code locations
 
 2. **Workspace Config**: `platform/workspace.yaml`
-   - Removed `airbyte_sync` gRPC server entry
+   - Removed `example_sync` gRPC server entry
    - Updated description
 
 3. **Docker Configuration**: `app/docker-compose.yaml`
-   - Removed port `4267` exposure
+   - Removed port exposure (if applicable)
 
-4. **Dockerfile**: `app/Dockerfile.data-manager`
-   - Removed port `4267` from EXPOSE directive
+4. **Dockerfile**: `app/Dockerfile.data-platform-service`
+   - Removed port from EXPOSE directive (if applicable)
 
 ### Database Cleanup:
 
-1. **Cache Schema**: Dropped `pyairbyte_cache` schema
-2. **DBT Tables**: Dropped `staging.staging_faker_users` and `reporting.faker_users_reporting`
+1. **Cache Tables**: Dropped tables with connector prefix from `pyairbyte_cache` schema
+2. **DBT Tables**: Dropped staging and marts tables
 
 ### Commands Executed:
 
@@ -470,33 +470,33 @@ cd platform && ./stop.sh
 cd app && ./stop.sh
 
 # Step 2: Remove code location directory
-rm -rf app/dagster_code/airbyte_sync
+rm -rf app/data-platform-service/dagster_code/example_sync
 
 # Step 2.5: Clear Python cache (CRITICAL)
-find app/dagster_code -name "*.pyc" -delete
-find app/dagster_code -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find app/data-platform-service/dagster_code -name "*.pyc" -delete
+find app/data-platform-service/dagster_code -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
-# Step 3: Remove connector configuration
-rm app/data-manager/external-connectors/example-faker.yaml
+# Step 3: Remove connector configuration (if applicable)
+rm app/data-platform-service/data-manager/external-connectors/example-connector.yaml
 
-# Step 4: Remove DBT models
-rm app/dbt_models/models/pyairbyte_cache_sources.yml
-rm app/dbt_models/models/staging/staging_faker_users.sql
-rm app/dbt_models/models/faker_users_reporting.sql
+# Step 4: Remove DBT models (if applicable)
+rm app/data-platform-service/dbt_models/models/example_sources.yml
+rm app/data-platform-service/dbt_models/models/staging/staging_example.sql
+rm app/data-platform-service/dbt_models/models/marts/example_mart.sql
 
 # Step 5-8: Update configuration files (see above)
 
 # Step 9: Clean up database (optional)
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP SCHEMA IF EXISTS pyairbyte_cache CASCADE;"
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS staging.staging_faker_users CASCADE;"
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS reporting.faker_users_reporting CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS pyairbyte_cache.example_connector_table CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS staging.staging_example CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS marts.example_mart CASCADE;"
 
 # Step 10: Rebuild and verify
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 cd platform && ./start.sh
 
 # Verification
-docker exec data-manager python3 -c "import sys; sys.path.append('/app'); from dagster_code import airbyte_sync; print('❌ Code location still exists')" 2>/dev/null || echo "✅ Code location successfully removed"
+docker exec data-platform-service python3 -c "import sys; sys.path.append('/app'); from dagster_code import example_sync; print('❌ Code location still exists')" 2>/dev/null || echo "✅ Code location successfully removed"
 ```
 
 ---
@@ -569,7 +569,7 @@ After removal, verify:
 
 - [ ] **Code Location Directory**: `app/dagster_code/YOUR_CODE_LOCATION` is deleted
 - [ ] **Python Cache Cleared**: No `.pyc` files or `__pycache__` directories remain
-- [ ] **Connector Configuration**: `app/data-manager/external-connectors/YOUR_CONNECTOR.yaml` is deleted
+- [ ] **Connector Configuration**: `app/data-platform-service/data-manager/external-connectors/YOUR_CONNECTOR.yaml` is deleted
 - [ ] **DBT Models**: All related DBT models are deleted
 - [ ] **Code Location Config**: Entry removed from `code-locations.json`
 - [ ] **Workspace Config**: gRPC server entry removed from `workspace.yaml`

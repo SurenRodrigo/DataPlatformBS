@@ -39,7 +39,7 @@ def sync_credit_data(context: AssetExecutionContext):
         sheet_name = "CreditData"  # Assuming sheet name is "CreditData" - adjust if different
         
         # Database configuration
-        schema_name = "public"
+        schema_name = "pyairbyte_cache"
         table_name = "credit_data"
         
         # Field mapping from Excel columns to table columns
@@ -92,7 +92,7 @@ def sync_credit_data(context: AssetExecutionContext):
             schema_name=schema_name,
             table_name=table_name,
             chunk_size=10000,  # Process 10K rows per chunk
-            if_exists="append"  # Append to existing data
+            if_exists="replace"  # replace existing data
         )
         
         # Check result status and handle accordingly
@@ -101,18 +101,23 @@ def sync_credit_data(context: AssetExecutionContext):
         chunks_processed = result.get("chunks_processed", 0)
         errors = result.get("errors", [])
         warnings = result.get("warnings", [])
+        table_created = result.get("table_created", False)
         
         context.log.info(
             f"Excel to DB write completed: status={status}, "
             f"rows_written={rows_written}, chunks_processed={chunks_processed}, "
-            f"errors={len(errors)}, warnings={len(warnings)}"
+            f"table_created={table_created}, errors={len(errors)}, warnings={len(warnings)}"
         )
+        
+        if table_created:
+            context.log.info(f"Table '{schema_name}.{table_name}' was automatically created")
         
         # Add detailed metadata
         context.add_output_metadata({
             "status": MetadataValue.text(status),
             "rows_written": MetadataValue.int(rows_written),
             "chunks_processed": MetadataValue.int(chunks_processed),
+            "table_created": MetadataValue.bool(table_created),
             "errors_count": MetadataValue.int(len(errors)),
             "warnings_count": MetadataValue.int(len(warnings)),
             "schema": MetadataValue.text(schema_name),
