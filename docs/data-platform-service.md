@@ -69,7 +69,7 @@ The **Data Platform Service** is the central data orchestration engine of the 99
 │                  │                  │                        │
 │         ┌────────▼────────┐  ┌─────▼──────┐                │
 │         │  gRPC Servers   │  │ PostgreSQL │                │
-│         │  (Ports 4270+)  │  │   Caches   │                │
+│         │  (Port 4273)    │  │   Caches   │                │
 │         └─────────────────┘  └────────────┘                │
 └─────────────────────────────────────────────────────────────┘
                            │
@@ -196,7 +196,7 @@ dbt_models/
 
 ### 1. Multi-Cache Architecture
 
-Support for multiple isolated cache databases to separate data domains:
+Support for cache databases to store synced data:
 
 ```python
 from pyairbyte.utils.common_cache import get_cache
@@ -205,18 +205,12 @@ from pyairbyte.utils.common_cache import get_cache
 default_cache = get_cache("default", "my-connector")
 # Schema: pyairbyte_cache
 # Prefix: my_connector_
-
-# Domain-specific cache (e.g., regional data)
-regional_cache = get_cache("sweden", "regional-connector")
-# Schema: pyairbyte_cache_sweden
-# Prefix: regional_connector_
 ```
 
 **Benefits**:
-- Data isolation by domain/region
-- Independent scaling and maintenance
-- Security and compliance boundaries
-- Performance optimization per domain
+- Centralized data storage in PostgreSQL cache schema
+- Configurable table prefixes per connector
+- Performance optimization with proper indexing
 
 ### 2. Configuration-Driven Code Locations
 
@@ -226,22 +220,22 @@ All code locations are defined in `resources/dagster/code-locations.json`:
 {
   "code_locations": [
     {
-      "name": "data_pipeline_alpha",
+      "name": "bridgestone_data_sync",
       "enabled": true,
-      "description": "Alpha data pipeline for customer data",
-      "module": "dagster_code.data_pipeline_alpha",
-      "port": 4270,
+      "description": "Bridgestone data sync code location for Bridgestone data pipeline",
+      "module": "dagster_code.bridgestone_data_sync",
+      "port": 4273,
       "host": "data-platform-service",
       "metadata": {
-        "team": "data-engineering",
-        "domain": "customer_data",
+        "team": "data",
+        "domain": "bridgestone_data_sync",
         "version": "1.0.0"
       }
     }
   ],
   "config": {
     "workspace_name": "appbase-dagster-workspace",
-    "description": "AppBase Data Platform Dagster Workspace",
+    "description": "AppBase Data Platform Dagster Workspace (bridgestone_data_sync only)",
     "version": "1.0.0"
   }
 }
@@ -1308,15 +1302,15 @@ def dbt_clean(context: AssetExecutionContext, dbt: DbtCliResource):
 {
   "code_locations": [
     {
-      "name": "example_pipeline",
+      "name": "your_pipeline",
       "enabled": true,
-      "description": "Example data pipeline",
-      "module": "dagster_code.example_pipeline",
-      "port": 4270,
+      "description": "Your data pipeline description",
+      "module": "dagster_code.your_pipeline",
+      "port": 4274,
       "host": "data-platform-service",
       "metadata": {
-        "team": "data-engineering",
-        "domain": "example_domain",
+        "team": "data",
+        "domain": "your_domain",
         "version": "1.0.0",
         "maintainer": "data-team@example.com"
       }
@@ -1334,8 +1328,8 @@ def dbt_clean(context: AssetExecutionContext, dbt: DbtCliResource):
 - `name`: Unique identifier for code location (used in Dagster UI)
 - `enabled`: Boolean to enable/disable without deleting configuration
 - `description`: Human-readable description
-- `module`: Python module path (e.g., `dagster_code.pipeline_name`)
-- `port`: gRPC server port (use sequential ports: 4270, 4271, 4272, ...)
+- `module`: Python module path (e.g., `dagster_code.bridgestone_data_sync`)
+- `port`: gRPC server port (e.g., 4273)
 - `host`: Service hostname (typically `data-platform-service`)
 - `metadata`: Optional metadata for documentation and discovery
 
@@ -1353,16 +1347,6 @@ CACHE_CONFIGS = {
         'password': os.getenv('PYAIRBYTE_CACHE_DB_PASSWORD', 'dataplatpassword'),
         'schema_name': 'pyairbyte_cache',
         'table_prefix': 'default_',
-        'cleanup': True
-    },
-    'regional': {
-        'host': os.getenv('PYAIRBYTE_CACHE_REGIONAL_DB_HOST', 'db'),
-        'port': int(os.getenv('PYAIRBYTE_CACHE_REGIONAL_DB_PORT', '5432')),
-        'database': os.getenv('PYAIRBYTE_CACHE_REGIONAL_DB_NAME', 'regional_db'),
-        'username': os.getenv('PYAIRBYTE_CACHE_REGIONAL_DB_USER', 'regionaluser'),
-        'password': os.getenv('PYAIRBYTE_CACHE_REGIONAL_DB_PASSWORD', 'regionalpass'),
-        'schema_name': 'pyairbyte_cache_regional',
-        'table_prefix': 'regional_',
         'cleanup': True
     }
 }
@@ -1589,16 +1573,16 @@ context.log.error(f"Sync failed: {error_message}")
 **Solutions**:
 ```bash
 # Check if code location is enabled
-cat app/data-platform-service/data-manager/resources/dagster/code-locations.json | jq '.code_locations[] | select(.name == "your_location")'
+cat app/data-platform-service/data-manager/resources/dagster/code-locations.json | jq '.code_locations[] | select(.name == "bridgestone_data_sync")'
 
 # Verify module loads
-docker exec data-platform-service python3 -c "from dagster_code.your_location import defs; print('OK')"
+docker exec data-platform-service python3 -c "from dagster_code.bridgestone_data_sync import defs; print('OK')"
 
 # Check gRPC server logs
-docker logs data-platform-service | grep "your_location"
+docker logs data-platform-service | grep "bridgestone_data_sync"
 
 # Verify port is listening
-docker exec data-platform-service netstat -tlnp | grep 4270
+docker exec data-platform-service netstat -tlnp | grep 4273
 ```
 
 #### 2. Import Errors in Assets

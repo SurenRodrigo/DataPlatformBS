@@ -21,6 +21,7 @@ class ExcelToDbWriter:
     - Field mapping from Excel columns to table columns
     - Automatic type conversion based on inferred table schema
     - Support for PostgreSQL and MSSQL databases
+    - Support for Entra ID Service Principal authentication (MSSQL/Azure SQL)
     - Strict validation with fail-fast error handling
     """
     
@@ -37,7 +38,8 @@ class ExcelToDbWriter:
             dbms_type: Database type - "postgresql" or "mssql"
             connection_config: Dictionary with connection parameters
                 PostgreSQL: {"host", "port", "database", "username", "password", "schema" (optional)}
-                MSSQL: {"server", "database", "username", "password", "schema" (optional)}
+                MSSQL SQL Auth: {"server", "database", "username", "password", "port" (optional), "schema" (optional)}
+                MSSQL Entra ID: {"server", "database", "client_id", "client_secret", "tenant_id", "port" (optional), "schema" (optional)}
             field_mapping: Optional dictionary mapping Excel column names to table column names
                 Example: {"Excel_Column": "table_column", "Customer Name": "customer_name"}
         
@@ -90,15 +92,23 @@ class ExcelToDbWriter:
                 raise SQLAlchemyError(f"PostgreSQL engine creation failed: {e}")
         
         elif self.dbms_type == "mssql":
-            required_keys = ["server", "database", "username", "password"]
-            missing = [k for k in required_keys if k not in self.connection_config]
-            if missing:
-                raise ValueError(f"Missing required MSSQL connection keys: {missing}")
+            # Detect authentication method
+            has_entra_id = all(k in self.connection_config for k in ['client_id', 'client_secret', 'tenant_id'])
+            has_sql_auth = all(k in self.connection_config for k in ['username', 'password'])
+            
+            if not has_entra_id and not has_sql_auth:
+                raise ValueError(
+                    "Invalid MSSQL config: Must provide either Entra ID credentials "
+                    "(client_id, client_secret, tenant_id) or SQL Auth credentials (username, password)"
+                )
+            
+            # Validate required fields
+            if 'server' not in self.connection_config or 'database' not in self.connection_config:
+                raise ValueError("MSSQL config must include 'server' and 'database'")
             
             server = self.connection_config["server"]
             database = self.connection_config["database"]
-            username = self.connection_config["username"]
-            password = self.connection_config["password"]
+            port = self.connection_config.get("port", "1433")
             
             # Try ODBC Driver 18 first, fallback to 17
             drivers_to_try = [
@@ -109,24 +119,63 @@ class ExcelToDbWriter:
             last_error = None
             for driver in drivers_to_try:
                 try:
-                    # URL encode the driver name and credentials for connection string
+                    # URL encode the driver name
                     driver_encoded = quote_plus(driver)
-                    username_encoded = quote_plus(username)
-                    password_encoded = quote_plus(password)
-                    connection_string = (
-                        f"mssql+pyodbc://{username_encoded}:{password_encoded}@{server}/{database}"
-                        f"?driver={driver_encoded}"
-                        f"&TrustServerCertificate=yes"
-                        f"&Connection+Timeout=30"
-                    )
                     
+                    if has_entra_id:
+                        # Entra ID Service Principal Authentication
+                        client_id = self.connection_config['client_id']
+                        client_secret = self.connection_config['client_secret']
+                        tenant_id = self.connection_config['tenant_id']
+                        
+                        # Build connection string for Entra ID
+                        # Format: mssql+pyodbc:///?odbc_connect=<connection_string>
+                        odbc_connect_params = (
+                            f"Driver={{{driver}}};"
+                            f"Server=tcp:{server},{port};"
+                            f"Database={database};"
+                            f"Uid={client_id};"
+                            f"Pwd={client_secret};"
+                            f"Encrypt=yes;"
+                            f"TrustServerCertificate=no;"
+                            f"Connection Timeout=30;"
+                            f"Authentication=ActiveDirectoryServicePrincipal"
+                        )
+                        odbc_connect_encoded = quote_plus(odbc_connect_params)
+                        connection_string = f"mssql+pyodbc:///?odbc_connect={odbc_connect_encoded}"
+                        
+                        auth_method = "Entra ID Service Principal"
+                        logger.info(f"Using Entra ID Service Principal authentication for {server}")
+                    
+                    else:
+                        # SQL Authentication
+                        username = self.connection_config['username']
+                        password = self.connection_config['password']
+                        
+                        # URL encode credentials
+                        username_encoded = quote_plus(username)
+                        password_encoded = quote_plus(password)
+                        
+                        connection_string = (
+                            f"mssql+pyodbc://{username_encoded}:{password_encoded}@{server}/{database}"
+                            f"?driver={driver_encoded}"
+                            f"&TrustServerCertificate=yes"
+                            f"&Connection+Timeout=30"
+                        )
+                        
+                        auth_method = "SQL Authentication"
+                        logger.info(f"Using SQL Authentication for {server}")
+                    
+                    # Create engine
                     engine = create_engine(
                         connection_string,
                         pool_pre_ping=True,
                         fast_executemany=True  # Performance optimization for MSSQL
                     )
-                    logger.info(f"MSSQL engine created for {server}/{database} using {driver}")
+                    
+                    logger.info(f"MSSQL engine created for {server}/{database} using {driver} ({auth_method})")
                     return engine
+                    
                 except Exception as e:
                     last_error = e
                     logger.warning(f"Failed to create MSSQL engine with {driver}: {e}")
@@ -161,6 +210,163 @@ class ExcelToDbWriter:
                 return inspector.has_table(table_name, schema=schema_name)
         except Exception as e:
             logger.error(f"Error validating table existence: {e}")
+            return False
+    
+    def _create_schema_if_not_exists(self, schema_name: str) -> bool:
+        """
+        Create schema if it doesn't exist.
+        
+        Args:
+            schema_name: Schema name to create
+            
+        Returns:
+            True if schema was created or already exists, False on error
+        """
+        try:
+            with self.engine.connect() as conn:
+                if self.dbms_type == "postgresql":
+                    # Check if schema exists
+                    result = conn.execute(text(
+                        "SELECT schema_name FROM information_schema.schemata WHERE schema_name = :schema_name"
+                    ), {"schema_name": schema_name})
+                    
+                    if result.fetchone() is None:
+                        # Create schema
+                        conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"'))
+                        conn.commit()
+                        logger.info(f"Created schema: {schema_name}")
+                    else:
+                        logger.debug(f"Schema already exists: {schema_name}")
+                        
+                elif self.dbms_type == "mssql":
+                    # Check if schema exists
+                    result = conn.execute(text(
+                        "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = :schema_name"
+                    ), {"schema_name": schema_name})
+                    
+                    if result.fetchone() is None:
+                        # Create schema in MSSQL
+                        conn.execute(text(f"CREATE SCHEMA [{schema_name}]"))
+                        conn.commit()
+                        logger.info(f"Created schema: {schema_name}")
+                    else:
+                        logger.debug(f"Schema already exists: {schema_name}")
+                
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error creating schema '{schema_name}': {e}")
+            return False
+    
+    def _infer_column_type_from_pandas(self, dtype, sample_values: pd.Series) -> str:
+        """
+        Infer SQL column type from pandas dtype and sample values.
+        
+        Args:
+            dtype: pandas dtype
+            sample_values: Sample values from the column
+            
+        Returns:
+            SQL data type string
+        """
+        dtype_str = str(dtype).lower()
+        
+        # Check for datetime
+        if 'datetime' in dtype_str or pd.api.types.is_datetime64_any_dtype(dtype):
+            return "TIMESTAMP" if self.dbms_type == "postgresql" else "DATETIME2"
+        
+        # Check for integer
+        if 'int' in dtype_str:
+            return "BIGINT"
+        
+        # Check for float
+        if 'float' in dtype_str:
+            return "DOUBLE PRECISION" if self.dbms_type == "postgresql" else "FLOAT"
+        
+        # Check for boolean
+        if 'bool' in dtype_str:
+            return "BOOLEAN" if self.dbms_type == "postgresql" else "BIT"
+        
+        # Check for object (string) - determine max length from sample
+        if dtype == 'object' or dtype_str == 'object':
+            # Calculate max length from sample values
+            max_len = 0
+            for val in sample_values.dropna():
+                if val is not None:
+                    max_len = max(max_len, len(str(val)))
+            
+            # Add buffer for safety
+            max_len = max(max_len + 50, 255)
+            
+            # Cap at reasonable limits
+            if max_len > 4000:
+                return "TEXT" if self.dbms_type == "postgresql" else "NVARCHAR(MAX)"
+            else:
+                return f"VARCHAR({max_len})" if self.dbms_type == "postgresql" else f"NVARCHAR({max_len})"
+        
+        # Default to VARCHAR(255)
+        return "VARCHAR(255)" if self.dbms_type == "postgresql" else "NVARCHAR(255)"
+    
+    def _create_table_from_dataframe(
+        self,
+        df: pd.DataFrame,
+        schema_name: str,
+        table_name: str
+    ) -> bool:
+        """
+        Create table based on DataFrame structure.
+        
+        Args:
+            df: DataFrame to base table structure on
+            schema_name: Schema name
+            table_name: Table name
+            
+        Returns:
+            True if table was created successfully, False on error
+        """
+        try:
+            # Build column definitions
+            columns = []
+            for col_name in df.columns:
+                col_type = self._infer_column_type_from_pandas(df[col_name].dtype, df[col_name])
+                
+                if self.dbms_type == "postgresql":
+                    columns.append(f'"{col_name}" {col_type}')
+                else:  # MSSQL
+                    columns.append(f"[{col_name}] {col_type}")
+            
+            # Add metadata columns
+            if self.dbms_type == "postgresql":
+                columns.append('"_sync_created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+            else:  # MSSQL
+                columns.append("[_sync_created_at] DATETIME2 DEFAULT GETDATE()")
+            
+            # Build CREATE TABLE statement
+            columns_sql = ",\n    ".join(columns)
+            
+            if self.dbms_type == "postgresql":
+                create_sql = f'''
+                    CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" (
+                        {columns_sql}
+                    )
+                '''
+            else:  # MSSQL
+                create_sql = f'''
+                    IF NOT EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = '{schema_name}' AND t.name = '{table_name}')
+                    CREATE TABLE [{schema_name}].[{table_name}] (
+                        {columns_sql}
+                    )
+                '''
+            
+            with self.engine.connect() as conn:
+                conn.execute(text(create_sql))
+                conn.commit()
+            
+            logger.info(f"Created table: {schema_name}.{table_name} with {len(df.columns)} columns")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error creating table '{schema_name}.{table_name}': {e}")
             return False
     
     def infer_table_schema(self, schema_name: str, table_name: str) -> Dict[str, Dict[str, Any]]:
@@ -704,7 +910,8 @@ class ExcelToDbWriter:
         schema_name: str,
         table_name: str,
         chunk_size: int = 10000,
-        if_exists: str = 'append'
+        if_exists: str = 'append',
+        auto_create_table: bool = True
     ) -> Dict[str, Any]:
         """
         Main method to read Excel file and write to database table with streaming chunk processing.
@@ -716,6 +923,7 @@ class ExcelToDbWriter:
             table_name: Database table name
             chunk_size: Number of rows to process per chunk (default: 10000)
             if_exists: What to do if data exists ('append', 'replace', 'fail')
+            auto_create_table: Automatically create schema and table if they don't exist (default: True)
             
         Returns:
             Dictionary with processing results:
@@ -724,25 +932,58 @@ class ExcelToDbWriter:
                 "rows_written": int,
                 "chunks_processed": int,
                 "errors": List[Dict],
-                "warnings": List[str]
+                "warnings": List[str],
+                "table_created": bool
             }
             
         Raises:
             FileNotFoundError: If Excel file doesn't exist
-            ValueError: If table doesn't exist or validation fails
+            ValueError: If table doesn't exist and auto_create_table is False, or validation fails
             SQLAlchemyError: If database operations fail
         """
         logger.info(
             f"Starting Excel to DB write: {excel_path} (sheet: {sheet_name}) -> "
-            f"{schema_name}.{table_name} (chunk_size: {chunk_size})"
+            f"{schema_name}.{table_name} (chunk_size: {chunk_size}, auto_create: {auto_create_table})"
         )
         
-        # Validate table exists
+        table_created = False
+        
+        # Check if table exists, create if auto_create_table is True
         if not self._validate_table_exists(schema_name, table_name):
-            raise ValueError(
-                f"Table '{schema_name}.{table_name}' does not exist. "
-                f"Please create the table before writing data."
-            )
+            if auto_create_table:
+                logger.info(f"Table '{schema_name}.{table_name}' does not exist. Will create automatically.")
+                
+                # Create schema first
+                if not self._create_schema_if_not_exists(schema_name):
+                    raise ValueError(f"Failed to create schema '{schema_name}'")
+                
+                # Read first chunk to determine table structure
+                logger.info("Reading first chunk to determine table structure...")
+                try:
+                    # Get first chunk iterator
+                    first_chunk_iter = self._read_excel_in_chunks(excel_path, sheet_name, chunk_size)
+                    first_chunk = next(first_chunk_iter, None)
+                    
+                    if first_chunk is None or first_chunk.empty:
+                        raise ValueError(f"Excel file '{excel_path}' sheet '{sheet_name}' is empty")
+                    
+                    # Apply field mapping to determine target columns
+                    mapped_first_chunk = self._map_fields(first_chunk, self.field_mapping)
+                    
+                    # Create table based on mapped structure
+                    if not self._create_table_from_dataframe(mapped_first_chunk, schema_name, table_name):
+                        raise ValueError(f"Failed to create table '{schema_name}.{table_name}'")
+                    
+                    table_created = True
+                    logger.info(f"Successfully created table '{schema_name}.{table_name}'")
+                    
+                except StopIteration:
+                    raise ValueError(f"Excel file '{excel_path}' sheet '{sheet_name}' is empty")
+            else:
+                raise ValueError(
+                    f"Table '{schema_name}.{table_name}' does not exist. "
+                    f"Set auto_create_table=True to create automatically, or create the table manually."
+                )
         
         # Infer table schema
         try:
@@ -841,7 +1082,8 @@ class ExcelToDbWriter:
                 "rows_written": total_rows_written,
                 "chunks_processed": chunks_processed,
                 "errors": errors,
-                "warnings": warnings
+                "warnings": warnings,
+                "table_created": table_created
             }
             
         except SQLAlchemyError:

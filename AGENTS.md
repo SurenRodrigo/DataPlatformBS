@@ -57,21 +57,17 @@ data-platform-99x-v2/
 │   │   │   ├── dagster.yaml   # Dagster app configuration
 │   │   │   ├── entrypoint.sh  # Data platform service startup script
 │   │   │   ├── requirements.txt # Python dependencies
-│   │   │   ├── pyairbyte/     # PyAirbyte integration
-│   │   │   ├── external-connectors/ # External connector configs
+│   │   │   ├── pyairbyte/     # PyAirbyte integration and utilities
+│   │   │   ├── external-connectors/ # External connector configs (YAML)
 │   │   │   ├── resources/     # Dagster resources
 │   │   │   └── scripts/       # Utility scripts
 │   │   ├── dagster_code/      # Dagster code locations
-│   │   │   ├── sweden_data_sync/ # Sweden data sync pipeline (port 4270)
 │   │   │   └── bridgestone_data_sync/ # Bridgestone data sync pipeline (port 4273)
-│   │   ├── dbt_models/        # DBT transformation models
-│   │   │   ├── dbt_project.yml # DBT project configuration
-│   │   │   ├── models/        # DBT models
-│   │   │   ├── profiles.yml   # DBT profiles
-│   │   │   └── dbt_packages/  # DBT packages
-│   │   └── dbt_models_se/     # Sweden-specific DBT transformation models
+│   │   └── dbt_models/        # DBT transformation models
 │   │       ├── dbt_project.yml # DBT project configuration
-│   │       └── models/        # Sweden-specific DBT models
+│   │       ├── models/        # DBT models
+│   │       ├── profiles.yml   # DBT profiles
+│   │       └── dbt_packages/  # DBT packages
 │   ├── appbase-init/          # AppBase initialization service
 │   │   ├── appbase-schemas/   # Database migration files
 │   │   │   ├── V1__create_init_tables.sql
@@ -106,10 +102,10 @@ data-platform-99x-v2/
 ### Application Services
 - **AppBase Init**: Node.js/TypeScript service (Node.js 24.11.1 LTS) for application initialization and database setup using Flyway
 - **Data Platform Service**: Python service (Python 3.11) for Dagster gRPC servers and PyAirbyte integration
-  - Contains: `data-manager/`, `dagster_code/`, `dbt_models/`, `dbt_models_se/` (all organized under `data-platform-service/`)
+  - Contains: `data-manager/`, `dagster_code/`, `dbt_models/` (all organized under `data-platform-service/`)
 - **Client**: Next.js frontend application with TypeScript (not deployed as Docker service, runs separately)
-- **Dagster Code Locations**: Data pipeline definitions and orchestration (2 active locations)
-- **DBT Models**: Data transformation layer with staging and marts (main + Sweden-specific)
+- **Dagster Code Locations**: Data pipeline definitions and orchestration (1 active location: bridgestone_data_sync)
+- **DBT Models**: Data transformation layer with staging and marts
 - **PyAirbyte Integration**: External data connector management with cache database support
 - **Database Migrations**: Flyway-style schema management (V1-V6 migrations)
 
@@ -196,7 +192,7 @@ App: appbase-init → data-platform-service
 ### Detailed Service Flow
 1. **Platform Layer**: Database → Hasura → BI Tools → Dagster → Nginx
 2. **Application Layer**: AppBase Init → Data Platform Service
-3. **Cross-Layer**: Data Platform Service connects to Dagster via gRPC (ports 4266, 4270, 4273)
+3. **Cross-Layer**: Data Platform Service connects to Dagster via gRPC (port 4273)
 4. **Client**: Next.js frontend runs separately (not as Docker service), connects to Hasura GraphQL API
 
 ## Network Architecture
@@ -204,9 +200,7 @@ App: appbase-init → data-platform-service
 - **External Network**: `app-base-network` for cross-compose communication
 - **Internal Network**: `appbase_intternal` for platform services
 - **Shared Volumes**: `dagster_shared_storage` between platform and app
-- **gRPC Communication**: Data Platform Service runs multiple gRPC servers:
-  - Port 4266: Default/main gRPC server
-  - Port 4270: sweden_data_sync code location
+- **gRPC Communication**: Data Platform Service runs gRPC server:
   - Port 4273: bridgestone_data_sync code location
 - **Subdomain Routing**: Nginx routes traffic based on subdomains (hasura.localhost, dagster.localhost, superset.localhost)
 
@@ -228,13 +222,13 @@ App: appbase-init → data-platform-service
 - The database container (`postgres-entrypoint.sh`) reads from `service.yaml` to determine which service databases to create
 
 ### Application Environment Variables
-- **Database**: `APPBASE_DB_*`, `APPBASE_DB_NAME_SW` (Application database connections, including Sweden-specific)
+- **Database**: `APPBASE_DB_*`, `APPBASE_CONFIG_DB_*` (Application database connections)
 - **Hasura**: `HASURA_URL`, `HASURA_GRAPHQL_ADMIN_SECRET` (GraphQL integration - connection details only)
 - **BI Tools**: `METABASE_*`, `SUPERSET_*` (BI tool connection URLs and credentials - connection details only)
 - **Dagster**: `DAGSTER_*`, `DAGSTER_HOME`, `DAGSTER_GRPC_*` (Data orchestration - connection details only)
-- **PyAirbyte**: `PYAIRBYTE_*`, `PYAIRBYTE_CACHE_SWEDEN_DB_*` (External connector configuration, including Sweden cache DB)
+- **PyAirbyte**: `PYAIRBYTE_*` (External connector configuration)
 - **Init Service**: `APPBASE_INIT_*`, `RUN_DB_MIGRATIONS` (Initialization settings)
-- **Integration APIs**: `DITIO_*`, `TQM_*`, `AOE_DITIO_*`, `ENDRE_*`, `SCANIA_*`, `GK_SP_*`, `SE_SP_*` (External API configurations)
+- **Integration APIs**: External API configurations as needed for specific data pipelines
 
 **Service Feature Toggles**: 
 - **IMPORTANT**: Service enable/disable is configured in `service.yaml` at project root, NOT via environment variables
@@ -300,7 +294,7 @@ docker compose -f app/docker-compose.yaml logs -f
 - **Database**: PostgreSQL health check via `pg_isready`
 - **Hasura**: GraphQL endpoint availability
 - **Dagster**: Webserver API availability (port 3030)
-- **Data Platform Service**: gRPC server health check (port 4266 for main server, ports 4270 and 4273 for code locations)
+- **Data Platform Service**: gRPC server health check (port 4273 for bridgestone_data_sync code location)
 - **BI Tools**: Web interface availability
 - **Nginx**: HTTP endpoint availability with health endpoint
 - **AppBase Init**: One-time initialization service - verifies completion via exit code (0 = success), not running status
@@ -317,8 +311,6 @@ cd app && docker compose ps
 curl http://localhost:8081/healthz  # Hasura
 curl http://localhost:3030/health   # Dagster
 curl http://localhost/health        # Nginx
-curl http://localhost:4266/health   # Data Platform Service main gRPC server
-curl http://localhost:4270/health   # Sweden data sync gRPC server
 curl http://localhost:4273/health   # Bridgestone data sync gRPC server
 ```
 
@@ -344,8 +336,8 @@ curl http://localhost:4273/health   # Bridgestone data sync gRPC server
 - Dagster shared storage must be accessible to both platform and app
 - Use proper volume permissions and ownership
 - Check volume mount paths in docker-compose files
-- Ensure PyAirbyte cache database is properly configured (main + Sweden-specific)
-- Verify DBT models and profiles are mounted correctly (main `dbt_models/` + Sweden `dbt_models_se/`)
+- Ensure PyAirbyte cache database is properly configured
+- Verify DBT models and profiles are mounted correctly
 - Dagster code locations mounted for hot reloading: `./data-platform-service/dagster_code:/app/dagster_code:delegated`
 - All data platform components organized under `data-platform-service/` directory
 
@@ -371,9 +363,9 @@ curl http://localhost:4273/health   # Bridgestone data sync gRPC server
 - **External Networks**: Cross-compose communication via external networks
 - **Shared Storage**: Dagster configuration shared between platform and app
 - **External Database Mode**: Use `--no-local-db` flag with `docker-compose.no-db.yaml` override file
-- **Multiple gRPC Servers**: Data Platform Service runs 2 code locations on separate ports (4270, 4273)
+- **gRPC Server**: Data Platform Service runs 1 code location on port 4273 (bridgestone_data_sync)
 - **Configuration-Driven**: Code locations defined in `app/data-platform-service/data-manager/resources/dagster/code-locations.json`
-- **Organized Structure**: All data platform components (data-manager, dagster_code, dbt_models, dbt_models_se) under `data-platform-service/`
+- **Organized Structure**: All data platform components (data-manager, dagster_code, dbt_models) under `data-platform-service/`
 
 ## Key Files for Understanding
 
@@ -390,9 +382,9 @@ curl http://localhost:4273/health   # Bridgestone data sync gRPC server
 - `platform/nginx.dev.conf` - Development nginx configuration
 - `platform/nginx.prod.conf` - Production nginx configuration
 - `platform/dagster.yaml` - Dagster platform configuration
-- `platform/workspace.yaml` - Dagster workspace configuration (defines 2 gRPC code locations)
+- `platform/workspace.yaml` - Dagster workspace configuration (defines gRPC code locations)
 - `app/data-platform-service/data-manager/dagster.yaml` - Dagster app configuration
-- `app/data-platform-service/data-manager/resources/dagster/code-locations.json` - Code location definitions (sweden_data_sync, bridgestone_data_sync)
+- `app/data-platform-service/data-manager/resources/dagster/code-locations.json` - Code location definitions (bridgestone_data_sync)
 - `app/data-platform-service/data-manager/scripts/dagster-init.sh` - Multi-gRPC server initialization script
 - `app/appbase-init/appbase-schemas/` - Database migration files (V1-V6)
 - `app/appbase-init/init/` - Application initialization service (TypeScript source, scripts, resources)
@@ -400,9 +392,8 @@ curl http://localhost:4273/health   # Bridgestone data sync gRPC server
 - `app/appbase-init/init/scripts/db-init.sh` - Database initialization script (verifies service databases exist only for services enabled in service.yaml)
 - `app/appbase-init/init/scripts/parse-service-yaml.js` - Node.js utility to parse service.yaml (used by entrypoint.sh and db-init.sh)
 - `platform/postgres-entrypoint.sh` - Database container initialization script (reads service.yaml to create service databases)
-- `app/data-platform-service/dbt_models/` - DBT transformation models (main)
-- `app/data-platform-service/dbt_models_se/` - DBT transformation models (Sweden-specific)
-- `app/data-platform-service/data-manager/pyairbyte/` - External connector integration
+- `app/data-platform-service/dbt_models/` - DBT transformation models
+- `app/data-platform-service/data-manager/pyairbyte/` - External connector integration and utilities
 - `app/Dockerfile.appbase-init` - AppBase Init image (multi-stage: Node.js 24.11.1 LTS + Flyway)
 - `app/Dockerfile.data-platform-service` - Data Platform Service image (multi-stage: Python 3.11 + Microsoft ODBC drivers)
 - `platform/Dockerfile.metabase` - Custom hardened Metabase image (multi-stage build)
@@ -459,10 +450,10 @@ cd app && ./start.sh --no-cache
 ### PyAirbyte Integration
 - External data connector management
 - Configurable connector settings via environment variables
-- Cache database for synced data storage (main + Sweden-specific)
+- Cache database for synced data storage
 - Support for multiple data sources
 - Connector configurations in `app/data-platform-service/data-manager/external-connectors/`
-- Utilities in `app/data-platform-service/data-manager/pyairbyte/utils/` for sync, cache management, and event handling
+- Utilities in `app/data-platform-service/data-manager/pyairbyte/utils/` for sync, cache management, Excel processing, MSSQL/MySQL sync, and event handling
 
 ### Database Schema Management
 - Flyway-style migration system
@@ -531,8 +522,9 @@ All platform services use security-hardened container images with zero critical 
 - All images tested and verified with Docker Scout vulnerability scanning
 
 **Dagster Code Locations:**
-- **sweden_data_sync** (port 4270): Sweden-specific data synchronization pipeline
 - **bridgestone_data_sync** (port 4273): Bridgestone data synchronization pipeline
+  - Assets: `hello_world_asset`, `sync_invoice_data`, `sync_credit_data`, `sync_wwi_invoices`
+  - Jobs: `bridgestone_data_sync_job`, `sync_data_job`
 - All code locations configured in `app/data-platform-service/data-manager/resources/dagster/code-locations.json`
 - Platform workspace references all locations in `platform/workspace.yaml`
 

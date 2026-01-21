@@ -44,7 +44,7 @@ Before starting, ensure you have:
 
 3. **Database Access**: PostgreSQL database is running and accessible
 
-4. **Required Dependencies**: All Python packages are installed in the data-manager service
+4. **Required Dependencies**: All Python packages are installed in the data-platform-service
 
 ---
 
@@ -70,7 +70,7 @@ touch app/dagster_code/your_connector_name/jobs/__init__.py
 
 ### Step 2: Create Custom Connector Configuration
 
-Create a YAML connector configuration in the data-manager service:
+Create a YAML connector configuration in the data-platform-service:
 
 ```bash
 # Create the connector configuration. NB: This should be already available, create only if not already there
@@ -385,7 +385,7 @@ Add your new code location to the Dagster configuration. **This step requires up
       "description": "Your connector sync orchestration code location",
       "module": "dagster_code.your_connector_name",
       "port": 4268,
-      "host": "data-manager",
+      "host": "data-platform-service",
       "metadata": {
         "team": "data",
         "domain": "your_connector_name",
@@ -412,31 +412,31 @@ Add your new code location to the Dagster configuration. **This step requires up
 
 load_from:
   - grpc_server:
-      host: data-manager
-      port: 4268
+      host: data-platform-service
+      port: 4274
       location_name: your_connector_name
       # Your connector sync orchestration code location
 ```
 
 #### 9.3: Update Docker Port Exposures
 
-**Update `app/docker-compose.yaml`** - Ensure your gRPC port is exposed on the data-manager service:
+**Update `app/docker-compose.yaml`** - Ensure your gRPC port is exposed on the data-platform-service:
 
 ```yaml
-  data-manager:
+  data-platform-service:
     # ... existing configuration ...
     ports:
-      - "4266:4266"  # default gRPC port (reserved/compatibility)
-      - "4268:4268"  # your_connector_name gRPC server port
+      - "4273:4273"  # bridgestone_data_sync gRPC server port
+      - "4274:4274"  # your_connector_name gRPC server port (new)
 ```
 
 #### 9.4: Verify Dockerfile Port Configuration
 
-**Check `app/Dockerfile.data-manager`** - Ensure the EXPOSE directive includes your port:
+**Check `app/Dockerfile.data-platform-service`** - Ensure the EXPOSE directive includes your port:
 
 ```dockerfile
 # Expose gRPC ports for all code locations
-EXPOSE 4266 4268
+EXPOSE 4273 4274
 ```
 
 **Note**: The Dockerfile already exposes multiple ports, so you may not need to change it unless you're using a port outside the current range.
@@ -445,9 +445,9 @@ EXPOSE 4266 4268
 
 When choosing a port for your new code location:
 
-- **Current Ports**: 4266 (dbt_poc), 4267 (airbyte_sync)
-- **Available Range**: 4268-4299 (reserved for code locations)
-- **Best Practice**: Use sequential ports (4268, 4269, 4270, etc.)
+- **Current Ports**: 4273 (bridgestone_data_sync)
+- **Available Range**: 4274-4299 (reserved for new code locations)
+- **Best Practice**: Use sequential ports (4274, 4275, 4276, etc.)
 - **Avoid Conflicts**: Don't use ports already assigned to other services
 
 #### 9.6: Platform Service Considerations
@@ -464,11 +464,11 @@ The platform services (Dagster webserver, daemon) will automatically discover yo
 ### Step 10: Rebuild and Test
 
 ```bash
-# Rebuild the data-manager service
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+# Rebuild the data-platform-service
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 
 # Verify the code location loads
-docker exec data-manager python3 -c "from dagster_code.your_connector_name import defs; print('✅ Code location loaded successfully')"
+docker exec data-platform-service python3 -c "from dagster_code.your_connector_name import defs; print('✅ Code location loaded successfully')"
 ```
 
 ---
@@ -522,7 +522,7 @@ find app/dagster_code -name "*.pyc" -o -name "__pycache__" | wc -l
 # Should return 0 if cache is properly cleared
 ```
 
-**Why this is critical**: Python cache files can contain references to removed modules, causing import errors and preventing the data-manager service from starting properly.
+**Why this is critical**: Python cache files can contain references to removed modules, causing import errors and preventing the data-platform-service from starting properly.
 
 #### Step 3: Remove Connector Configuration
 
@@ -565,15 +565,15 @@ Remove the entry for your code location:
 {
   "code_locations": [
     {
-      "name": "dbt_poc",
+      "name": "bridgestone_data_sync",
       "enabled": true,
-      "description": "DBT proof-of-concept code location for all dbt asset orchestration",
-      "module": "dagster_code.dbt_poc",
-      "port": 4266,
-      "host": "data-manager",
+      "description": "Bridgestone data sync code location for Bridgestone data pipeline",
+      "module": "dagster_code.bridgestone_data_sync",
+      "port": 4273,
+      "host": "data-platform-service",
       "metadata": {
         "team": "data",
-        "domain": "dbt_poc",
+        "domain": "bridgestone_data_sync",
         "version": "1.0.0"
       }
     }
@@ -581,7 +581,7 @@ Remove the entry for your code location:
   ],
   "config": {
     "workspace_name": "appbase-dagster-workspace",
-    "description": "AppBase Data Platform Dagster Workspace (dbt_poc only)",
+    "description": "AppBase Data Platform Dagster Workspace (bridgestone_data_sync only)",
     "version": "1.0.0"
   }
 }
@@ -595,14 +595,14 @@ Remove the gRPC server entry for your code location:
 
 ```yaml
 # Dagster Workspace Configuration - Multiple gRPC Servers
-# Description: AppBase Data Platform Dagster Workspace (dbt_poc only)
+# Description: AppBase Data Platform Dagster Workspace (bridgestone_data_sync only)
 
 load_from:
   - grpc_server:
-      host: data-manager
-      port: 4266
-      location_name: dbt_poc
-      # DBT POC code location for all dbt asset orchestration
+      host: data-platform-service
+      port: 4273
+      location_name: bridgestone_data_sync
+      # Bridgestone data sync code location
   # ⚠️ REMOVED: your_connector_name gRPC server entry
 ```
 
@@ -611,10 +611,10 @@ load_from:
 **Update `app/docker-compose.yaml`** - Remove the port for your code location:
 
 ```yaml
-  data-manager:
+  data-platform-service:
     # ... existing configuration ...
     ports:
-      - "4266:4266"  # dbt_poc gRPC server port
+      - "4273:4273"  # bridgestone_data_sync gRPC server port
       # ⚠️ REMOVED: your_connector_name port
 ```
 
@@ -622,11 +622,11 @@ load_from:
 
 #### Step 8: Update Dockerfile (Optional)
 
-**Update `app/Dockerfile.data-manager`** - Remove the port from EXPOSE directive:
+**Update `app/Dockerfile.data-platform-service`** - Remove the port from EXPOSE directive:
 
 ```dockerfile
 # Expose gRPC ports for all code locations
-EXPOSE 4266  # Only expose ports that are actually used
+EXPOSE 4273  # Only expose ports that are actually used
 ```
 
 **Note**: Only remove ports if no other code locations use them.
@@ -637,11 +637,11 @@ If you want to remove all data associated with the code location:
 
 ```bash
 # Connect to database and remove cache tables
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP SCHEMA IF EXISTS pyairbyte_cache CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP SCHEMA IF EXISTS pyairbyte_cache CASCADE;"
 
 # Remove DBT-generated tables (if they exist)
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS staging.staging_your_table CASCADE;"
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS reporting.your_table_reporting CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS staging.staging_your_table CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP TABLE IF EXISTS reporting.your_table_reporting CASCADE;"
 ```
 
 **⚠️ Warning**: This will permanently delete all data associated with the code location. Only do this if you're sure you want to remove all data.
@@ -649,14 +649,14 @@ docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatus
 #### Step 10: Rebuild and Verify Removal
 
 ```bash
-# Rebuild the data-manager service
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+# Rebuild the data-platform-service
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 
 # Start platform services
 cd platform && ./start.sh
 
 # Verify the code location is no longer loaded
-docker exec data-manager python3 -c "import sys; sys.path.append('/app'); from dagster_code import your_connector_name; print('❌ Code location still exists')" 2>/dev/null || echo "✅ Code location successfully removed"
+docker exec data-platform-service python3 -c "import sys; sys.path.append('/app'); from dagster_code import your_connector_name; print('❌ Code location still exists')" 2>/dev/null || echo "✅ Code location successfully removed"
 
 # Check Dagster UI to verify the code location is gone
 # Access http://localhost:3030 and verify:
@@ -694,10 +694,10 @@ After removal, verify:
 cd platform && ./stop.sh && ./start.sh
 
 # Check if gRPC server is still running
-docker exec data-manager ps aux | grep dagster
+docker exec data-platform-service ps aux | grep dagster
 
-# Force restart data-manager service
-docker compose -f app/docker-compose.yaml restart data-manager
+# Force restart data-platform-service
+docker compose -f app/docker-compose.yaml restart data-platform-service
 ```
 
 #### Issue 2: Import Errors After Removal
@@ -707,13 +707,13 @@ docker compose -f app/docker-compose.yaml restart data-manager
 **Solutions**:
 ```bash
 # Clear Python cache (both locally and in container)
-find app/dagster_code -name "*.pyc" -delete
-find app/dagster_code -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-docker exec data-manager find /app -name "*.pyc" -delete
-docker exec data-manager find /app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find app/data-platform-service/dagster_code -name "*.pyc" -delete
+find app/data-platform-service/dagster_code -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+docker exec data-platform-service find /app -name "*.pyc" -delete
+docker exec data-platform-service find /app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
-# Rebuild data-manager service
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+# Rebuild data-platform-service
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 ```
 
 **Prevention**: Always clear Python cache when removing code locations to avoid stale references.
@@ -725,10 +725,10 @@ docker compose -f app/docker-compose.yaml up -d --build data-manager
 **Solutions**:
 ```bash
 # Check which processes are using the port
-docker exec data-manager netstat -tlnp | grep :4267
+docker exec data-platform-service netstat -tlnp | grep :4273
 
 # Kill any remaining processes
-docker exec data-manager pkill -f "dagster.*4267" || true
+docker exec data-platform-service pkill -f "dagster.*4273" || true
 ```
 
 #### Issue 4: Stale Python Cache After Removal
@@ -745,15 +745,15 @@ find app/dagster_code -name "*.pyc" -delete
 find app/dagster_code -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # Clear Python cache in container
-docker exec data-manager find /app -name "*.pyc" -delete
-docker exec data-manager find /app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+docker exec data-platform-service find /app -name "*.pyc" -delete
+docker exec data-platform-service find /app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # Verify cache is cleared
-find app/dagster_code -name "*.pyc" -o -name "__pycache__" | wc -l
+find app/data-platform-service/dagster_code -name "*.pyc" -o -name "__pycache__" | wc -l
 # Should return 0
 
 # Rebuild and restart services
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 ```
 
 **Prevention**: Always clear Python cache immediately after removing code locations.
@@ -792,14 +792,14 @@ rm app/dbt_models/models/faker_users_reporting.sql
 
 # Step 5: Update code-locations.json (remove airbyte_sync entry)
 # Step 6: Update workspace.yaml (remove airbyte_sync gRPC server)
-# Step 7: Update docker-compose.yaml (remove port 4267)
-# Step 8: Update Dockerfile.data-manager (remove port 4267 from EXPOSE)
+# Step 7: Update docker-compose.yaml (remove port)
+# Step 8: Update Dockerfile.data-platform-service (remove port from EXPOSE)
 
 # Step 9: Clean up database (optional)
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "DROP SCHEMA IF EXISTS pyairbyte_cache CASCADE;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "DROP SCHEMA IF EXISTS pyairbyte_cache CASCADE;"
 
 # Step 10: Rebuild and verify
-docker compose -f app/docker-compose.yaml up -d --build data-manager
+docker compose -f app/docker-compose.yaml up -d --build data-platform-service
 cd platform && ./start.sh
 ```
 
@@ -871,19 +871,19 @@ from pyairbyte.utils.pyairbyte_sync import sync_connector
 from pyairbyte.utils.common_cache import get_cache
 
 @asset(
-    name="next_erp_sync_assets_sweden",
-    group_name="sweden_data_sync",
-    deps=["cleanup_airbyte_cache_tables_sweden"]
+    name="sync_api_data",
+    group_name="my_data_sync",
+    deps=["cleanup_cache"]
 )
-def next_erp_sync_assets_sweden(context: AssetExecutionContext):
+def sync_api_data(context: AssetExecutionContext):
     """
-    Business logic: Sync next-erp-connector using Sweden cache configuration.
+    Business logic: Sync data from API connector using cache configuration.
     """
-    # Business decision: Use Sweden cache
-    cache = get_cache("sweden", "next_erp_connector")
+    # Business decision: Use default cache
+    cache = get_cache("default", "api_connector")
     
     # Business decision: Sync this specific connector
-    result = sync_connector("next_erp_connector", cache=cache)
+    result = sync_connector("api_connector", cache=cache)
     
     # Dagster-specific: Handle metadata, logging, errors
     if result.get('status') == 'success':
@@ -892,7 +892,7 @@ def next_erp_sync_assets_sweden(context: AssetExecutionContext):
             "cache_schema": MetadataValue.text(result.get('cache_schema')),
             "details": MetadataValue.json(result['result'])
         })
-        context.log.info("Data successfully synced to Sweden PostgreSQL cache")
+        context.log.info("Data successfully synced to PostgreSQL cache")
         return result
     else:
         context.add_output_metadata({
@@ -938,33 +938,33 @@ sys.path.append('/app/data-manager')
 from pyairbyte.utils.graphql_util import query_graphql_api
 from pyairbyte.utils.event_store import bulk_write_events
 
-@asset(name="unit4ditio_event_gen", group_name="nrc_integrations")
-def unit4ditio_event_gen(context: AssetExecutionContext):
+@asset(name="data_event_gen", group_name="data_integrations")
+def data_event_gen(context: AssetExecutionContext):
     """
-    Business logic: Query users and create USER_SYNC_EVENT events.
+    Business logic: Query data and create DATA_SYNC_EVENT events.
     """
-    # Business decision: Query users from GraphQL
+    # Business decision: Query data from GraphQL
     query = """
     query {
-      users {
+      records {
         id
-        first_name
-        last_name
+        name
+        status
       }
     }
     """
     result = query_graphql_api(query)
-    users = result.get('data', {}).get('users', [])
+    records = result.get('data', {}).get('records', [])
     
-    # Business logic: Transform users into events
+    # Business logic: Transform records into events
     events_to_insert = []
-    for user in users:
+    for record in records:
         events_to_insert.append({
-            "event_type": "USER_SYNC_EVENT",
+            "event_type": "DATA_SYNC_EVENT",
             "event_data": {
-                "user_id": user.get('id'),
-                "first_name": user.get('first_name'),
-                "last_name": user.get('last_name')
+                "record_id": record.get('id'),
+                "name": record.get('name'),
+                "status": record.get('status')
             }
         })
     
@@ -1008,15 +1008,15 @@ from dagster import asset, AssetExecutionContext
 sys.path.append('/app/data-manager')
 from pyairbyte.utils.mssql_sync import sync_mssql_tables
 
-@asset(name="admmit_sync_assets", group_name="gk_data_sync")
-def admmit_sync_assets(context: AssetExecutionContext):
+@asset(name="mssql_sync_assets", group_name="data_sync")
+def mssql_sync_assets(context: AssetExecutionContext):
     """
     Business logic: Sync specific MSSQL tables to PostgreSQL cache.
     """
     # Business decision: Sync these specific tables
     result = sync_mssql_tables(
         server="mssql-server.example.com",
-        database="admmit_db",
+        database="source_db",
         tables=["table1", "table2"],
         cache_schema="pyairbyte_cache"
     )
@@ -1052,18 +1052,18 @@ The platform provides several utility modules in `app/data-manager/pyairbyte/uti
 #### 1. **`pyairbyte_sync.py`** - PyAirbyte Connector Syncing
 - `sync_connector(connector_name, streams_to_sync=None, cache=None)` - Main sync function
 - Handles connector loading, validation, stream selection, and data sync
-- **Used by**: Most sync assets (catalyst, unit4, tqm, etc.)
+- **Used by**: Sync assets that use PyAirbyte connectors
 
 #### 2. **`common_cache.py`** - Cache Management
 - `get_cache(cache_name, connector_name=None)` - Get configured PostgresCache
-- `CACHE_CONFIGS` - Cache configurations (default, sweden, etc.)
-- **Used by**: Sweden sync assets, assets requiring custom cache configurations
+- `CACHE_CONFIGS` - Cache configurations (default)
+- **Used by**: Assets requiring cache configurations
 
 #### 3. **`event_store.py`** - Event Processing
 - `bulk_write_events(events_to_insert)` - Bulk event insertion with duplicate detection
 - `get_unprocessed_or_failed_events(event_type)` - Retrieve events for processing
 - `write_event(event_type, event_data)` - Single event write
-- **Used by**: `nrc_integrations` code location
+- **Used by**: Event-driven processing assets
 
 #### 4. **`graphql_util.py`** - GraphQL Operations
 - `query_graphql_api(query, variables=None, ...)` - Execute GraphQL queries against Hasura
@@ -1078,12 +1078,12 @@ The platform provides several utility modules in `app/data-manager/pyairbyte/uti
 #### 6. **`mssql_sync.py`** - MSSQL Database Sync
 - `sync_mssql_tables(server, database, tables, cache_schema)` - Sync MSSQL tables to PostgreSQL
 - Handles type mapping, data transformation, and batch insertion
-- **Used by**: `admmit_sync_assets` and other MSSQL sync assets
+- **Used by**: MSSQL sync assets
 
 #### 7. **`mysql_sync.py`** - MySQL Database Sync
 - `sync_mysql_tables(server, database, tables, cache_schema)` - Sync MySQL tables to PostgreSQL
 - Similar to MSSQL sync but for MySQL databases
-- **Used by**: `jobylon_bi_sync_assets` and other MySQL sync assets
+- **Used by**: MySQL sync assets
 
 #### 8. **`cache_db_manager.py`** - Cache Database Management
 - `PyAirbyteCacheDBManager` - Class for managing cache schemas and tables
@@ -1239,7 +1239,7 @@ Create new utility functions when:
 ### 1. Code Location Loading
 
 ```bash
-docker exec data-manager python3 -c "from dagster_code.your_connector_name import defs; print(f'Assets: {len(defs.assets)}'); print(f'Jobs: {len(defs.jobs)}')"
+docker exec data-platform-service python3 -c "from dagster_code.your_connector_name import defs; print(f'Assets: {len(defs.assets)}'); print(f'Jobs: {len(defs.jobs)}')"
 ```
 
 ### 2. Individual Asset Testing
@@ -1261,10 +1261,10 @@ Test the complete pipeline:
 Verify data flows correctly:
 ```bash
 # Check PostgreSQL cache
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "SELECT COUNT(*) FROM pyairbyte_cache.your_table;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "SELECT COUNT(*) FROM pyairbyte_cache.your_table;"
 
 # Check final reporting table
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "SELECT COUNT(*) FROM reporting.your_table_reporting;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "SELECT COUNT(*) FROM reporting.your_table_reporting;"
 ```
 
 ### 5. DBT Model Testing
@@ -1272,13 +1272,13 @@ docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatus
 Test DBT models individually before running the complete pipeline:
 ```bash
 # Test DBT parse
-docker exec data-manager bash -c "cd /app/dbt_models && dbt parse"
+docker exec data-platform-service bash -c "cd /app/dbt_models && dbt parse"
 
 # Test staging model
-docker exec data-manager bash -c "cd /app/dbt_models && dbt run --select staging_your_table"
+docker exec data-platform-service bash -c "cd /app/dbt_models && dbt run --select staging_your_table"
 
 # Test reporting model
-docker exec data-manager bash -c "cd /app/dbt_models && dbt run --select your_table_reporting"
+docker exec data-platform-service bash -c "cd /app/dbt_models && dbt run --select your_table_reporting"
 ```
 
 ### 6. Database Schema Verification
@@ -1286,10 +1286,10 @@ docker exec data-manager bash -c "cd /app/dbt_models && dbt run --select your_ta
 Check the actual database structure to ensure your models match:
 ```bash
 # Check table structure
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'pyairbyte_cache' AND table_name = 'your_table' ORDER BY ordinal_position;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'pyairbyte_cache' AND table_name = 'your_table' ORDER BY ordinal_position;"
 
 # Check sample data
-docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatuser -d dataplatform -c "SELECT * FROM pyairbyte_cache.your_table LIMIT 3;"
+docker exec -e PGPASSWORD=dataplatpassword data-platform-service psql -h db -U dataplatuser -d dataplatform -c "SELECT * FROM pyairbyte_cache.your_table LIMIT 3;"
 ```
 
 ---
@@ -1300,11 +1300,10 @@ docker exec -e PGPASSWORD=dataplatpassword data-manager psql -h db -U dataplatus
 
 The platform uses a **configuration-driven port assignment** system:
 
-- **Port Range**: 4266-4299 (reserved for Dagster code locations)
+- **Port Range**: 4273-4299 (reserved for Dagster code locations)
 - **Current Assignments**:
-  - `4266`: dbt_poc
-  - `4267`: airbyte_sync
-  - `4268+`: Available for new code locations
+  - `4273`: bridgestone_data_sync
+- **Available Range**: 4274-4299 for new code locations
 - **Best Practice**: Use sequential ports to avoid conflicts
 
 ### Configuration Files Overview
@@ -1323,7 +1322,7 @@ When adding a new code location, you must update **4 key files**:
    - Exposes ports from container to host
    - Enables network communication between platform and app
 
-4. **`app/Dockerfile.data-manager`**
+4. **`app/Dockerfile.data-platform-service`**
    - Documents which ports the container exposes
    - Helps with container orchestration
 
@@ -1341,7 +1340,7 @@ When adding a new code location, you must update **4 key files**:
 ### Common Issues
 
 1. **Import Errors**
-   - Ensure `sys.path.append('/app/data-manager')` is in sync assets
+   - Ensure `sys.path.append('/app/data-manager')` is in sync assets (this is the path inside the container)
    - Verify all required packages are installed
 
 2. **DBT Errors**
@@ -1363,7 +1362,7 @@ When adding a new code location, you must update **4 key files**:
    - **Port Already in Use**: Check if port is already assigned in `code-locations.json`
    - **gRPC Server Not Starting**: Verify port is exposed in `docker-compose.yaml`
    - **Code Location Not Discovered**: Check `workspace.yaml` has correct port and location_name
-   - **Port Range Conflicts**: Ensure port is within 4266-4299 range
+   - **Port Range Conflicts**: Ensure port is within 4273-4299 range
    - **Docker Port Not Exposed**: Verify port is listed in `EXPOSE` directive in Dockerfile
 
 6. **DB Bridge Method Errors**
@@ -1431,15 +1430,14 @@ When adding a new code location, you must update **4 key files**:
 
 See the existing `sample_product_sync` code location for a complete working example:
 
-- **Location**: `app/dagster_code/sample_product_sync/`
-- **Connector YAML**: `app/data-manager/external-connectors/sample-connector.yaml`
-- **Assets**: `sync_sample_connector` (direct to PostgreSQL), `transform_sample_product_data`
-- **Job**: `sample_product_sync_pipeline`
+- **Location**: `app/data-platform-service/dagster_code/bridgestone_data_sync/`
+- **Assets**: `hello_world_asset`, `sync_invoice_data`, `sync_credit_data`, `sync_wwi_invoices`
+- **Jobs**: `bridgestone_data_sync_job`, `sync_data_job`
 - **Port/Workspace**:
-  - `app/data-manager/resources/dagster/code-locations.json` entry with `port: 4268`, `module: dagster_code.sample_product_sync`
-  - `platform/workspace.yaml` gRPC entry: host `data-manager`, port `4268`, location `sample_product_sync`
+  - `app/data-platform-service/data-manager/resources/dagster/code-locations.json` entry with `port: 4273`, `module: dagster_code.bridgestone_data_sync`
+  - `platform/workspace.yaml` gRPC entry: host `data-platform-service`, port `4273`, location `bridgestone_data_sync`
 
-This example demonstrates the current best-practice: PyAirbyte writes directly to PostgreSQL cache, and DBT reads from `pyairbyte_cache`.
+This example demonstrates the current best-practice: ExcelToDbWriter writes directly to PostgreSQL cache, and DBT can read from `pyairbyte_cache` schema.
 
 ---
 

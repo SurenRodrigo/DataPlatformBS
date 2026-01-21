@@ -111,12 +111,6 @@ PYAIRBYTE_CACHE_DB_USER="${DB_USER}"
 PYAIRBYTE_CACHE_DB_PASSWORD="${DB_PASSWORD}"
 PYAIRBYTE_CACHE_DB_NAME=dataplatform 
 
-PYAIRBYTE_CACHE_SWEDEN_DB_HOST="${DB_HOST}"
-PYAIRBYTE_CACHE_SWEDEN_DB_PORT=5432
-PYAIRBYTE_CACHE_SWEDEN_DB_USER="${DB_USER}"
-PYAIRBYTE_CACHE_SWEDEN_DB_PASSWORD="${DB_PASSWORD}"
-PYAIRBYTE_CACHE_SWEDEN_DB_NAME=dataplatform_sw
-
 ################################################################################
 # PYAIRBYTE CONNECTOR DYNAMIC CONFIGURATION
 ################################################################################
@@ -133,100 +127,34 @@ PYAIRBYTE_CACHE_SWEDEN_DB_NAME=dataplatform_sw
 # - Secrets should be managed via your secret manager in production
 
 # Uncomment and configure as needed:
-# PYAIRBYTE_CONNECTOR_CONFIGS='{"admmit-connector":{"server":"Admmitdp.database.windows.net", "database":"", "username":"", "password":"", "schema":"dbo"}, "catalyst-connector":{"client_id":"", "client_secret":""}, "catalyst-v1-connector":{"client_id":"", "client_secret":""}, "ditio-kept-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-time-styr-kept-userapi-connector":{"client_id":"", "client_secret":""}, "ditio-time-styr-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "unit4-api-connector":{"username":"", "password":""}, "unit4-ebitapi-connector":{"username":"", "password":""}, "unit4-interimapi-connector":{"username":"", "password":""}, "unit4-invoiceapi-connector":{"username":"", "password":""}, "unit4-liqudityapi-connector":{"username":"", "password":""}, "tqm-api-connector":{"token":""}, "endringer-api-connector":{"username":"", "password":""}, "icore-connector":{"x_api_key":"", "clientid":"","fromAlteredTs":"2025-10-01", "toAlteredTs":"2025-10-30T00:00:00Z"}, "jobylonbi-connector":{"host":"","port":3306,"database":"","username":"","password":"","schema":"","ssl":{"ssl_verify_cert":true,"ssl_verify_identity":true}}, "test_ditio-nrcg-userapi-connector":{"client_id":"", "client_secret":""}, "test_tqm-api-connector":{"token":""}}'
 PYAIRBYTE_CONNECTOR_CONFIGS="${PYAIRBYTE_CONNECTOR_CONFIGS}"
 
 ################################################################################
-# TEST CONNECTOR CONFIGURATION
+# ACTION HANDLER SERVICE CONFIGURATION
 ################################################################################
-# Set to true to use test connectors instead of production connectors
-# This affects DBT models and case processing assets
+# APPLICATION MODE CONFIGURATION
+################################################################################
+# APP_MODE controls development vs production behavior for app services
+#   - development: Enables hot reload, mounts source code volumes, uses watch mode
+#   - production: Uses built containers, no volume mounts, optimized runtime
+# Default: production (for safety)
+# Set to 'development' for local development with hot reload
+APP_MODE=production
+################################################################################
+# AZURE SQL DATABASE CONFIGURATION (for WWI data sync)
+################################################################################
+# Azure SQL Server and Database details
+AZURE_SQL_SERVER_FQDN="${AZURE_SQL_SERVER_FQDN}"
+AZURE_SQL_PORT="${AZURE_SQL_PORT}"
 
-# Ditio Test Connectors
-USE_DITIO_TEST_CONNECTORS=false
+# Destination Database: dataplatform (with service principal)
+AZURE_SQL_DATABASE_NAME="${AZURE_SQL_DATABASE_NAME}"
+AZURE_CLIENT_ID="${AZURE_CLIENT_ID}"
+AZURE_CLIENT_SECRET="${AZURE_CLIENT_SECRET}"
+AZURE_TENANT_ID="${AZURE_TENANT_ID}"
 
-# TQM Test Connectors  
-USE_TQM_TEST_CONNECTORS=false
-
-################################################################################
-# NRC SHAREPOINT CONFIGURATION
-################################################################################
-
-SP_CLIENT_ID="${SP_CLIENT_ID}"
-SP_CLIENT_SECRET="${SP_CLIENT_SECRET}"
-SP_SITE_URL="${SP_SITE_URL}"
-SP_FILE_LOCATION="${SP_FILE_LOCATION}"
-HR_FILE_NAME="HR_NRC_INPUTS.xlsx"
-HSE_FILE_NAME="HSE_NRC_INPUTS.xlsx"
-
-SE_SP_CLIENT_ID="${SE_SP_CLIENT_ID}"
-SE_SP_CLIENT_SECRET="${SE_SP_CLIENT_SECRET}"
-SE_SP_TENANT_ID="${SE_SP_TENANT_ID}"
-SE_SP_HOSTNAME="${SE_SP_HOSTNAME}"
-SE_SP_SITE_PATH="${SE_SP_SITE_PATH}"
-SE_SP_DRIVE_NAME="${SE_SP_DRIVE_NAME}"
-SE_SP_SYNC_FILE_PATH="${SE_SP_SYNC_FILE_PATH}"
-SE_SP_SITE_URL="${SE_SP_SITE_URL}"
-SE_SP_FILE_LOCATION="${SE_SP_FILE_LOCATION}"
-SE_DATA_FILE_NAME="${SE_DATA_FILE_NAME}"
-################################################################################
-# GK SHAREPOINT CONFIGURATION
-################################################################################
-GK_SP_CLIENT_ID="${GK_SP_CLIENT_ID}"    
-GK_SP_CLIENT_SECRET="${GK_SP_CLIENT_SECRET}"
-GK_SP_TENANT_ID="${GK_SP_TENANT_ID}"
-GK_SP_HOSTNAME="${GK_SP_HOSTNAME}"
-GK_SP_SITE_PATH="${GK_SP_SITE_PATH}"
-GK_SP_DRIVE_NAME="${GK_SP_DRIVE_NAME}"
-GK_SP_VISMA_SYNC_FILE_PATH="${GK_SP_VISMA_SYNC_FILE_PATH}"
-GK_SP_POTENTIAL_PROJECT_SYNC_FILE_PATH="${GK_SP_POTENTIAL_PROJECT_SYNC_FILE_PATH}"
-GK_SP_COMPELLO_SYNC_FILE_PATH="${GK_SP_COMPELLO_SYNC_FILE_PATH}"
-GK_SP_COMPELLO_SYNC_SHEET_NAME="${GK_SP_COMPELLO_SYNC_SHEET_NAME}"
-GK_AZURE_CONTAINER_SAS_URL="${GK_AZURE_CONTAINER_SAS_URL}"
-
-################################################################################
-# TQM API CONFIGURATION
-################################################################################
-TQM_OL1_KEY="${TQM_OL1_KEY}"
-TQM_TOKEN="${TQM_TOKEN}"
-TQM_CREATE_CASE_URL="${TQM_CREATE_CASE_URL}"
-
-################################################################################
-# DITIO API CONFIGURATION
-################################################################################
-DITIO_AUTH_TOKEN_URL="${DITIO_AUTH_TOKEN_URL}"
-DITIO_AUTH_CLIENT_ID="${DITIO_AUTH_CLIENT_ID}"
-DITIO_AUTH_CLIENT_SECRET="${DITIO_AUTH_CLIENT_SECRET}"
-DITIO_PATCH_CASE_URL="${DITIO_PATCH_CASE_URL}"
-DITIO_CREATE_PROJECT_URL="${DITIO_CREATE_PROJECT_URL}"
-DITIO_CREATE_TASK_URL="${DITIO_CREATE_TASK_URL}"
-DITIO_GET_TASKS_BY_TYPE_URL="${DITIO_GET_TASKS_BY_TYPE_URL}"
-
-################################################################################
-# AØE DITIO API CONFIGURATION
-################################################################################
-AOE_DITIO_CLIENT_ID="${AOE_DITIO_CLIENT_ID}"
-AOE_DITIO_CLIENT_SECRET="${AOE_DITIO_CLIENT_SECRET}"
-DITIO_AUTH_CLIENT_ID_KEPT="${DITIO_AUTH_CLIENT_ID_KEPT}"
-DITIO_AUTH_CLIENT_SECRET_KEPT="${DITIO_AUTH_CLIENT_SECRET_KEPT}"
-DITIO_KEPT_COMPANY_ID="${DITIO_KEPT_COMPANY_ID}"
-AOE_DITIO_AUTH_TOKEN_URL="${AOE_DITIO_AUTH_TOKEN_URL}"
-AOE_DITIO_API_BASE_URL="${AOE_DITIO_API_BASE_URL}"
-AOE_DITIO_CREATE_CASE_URL="${AOE_DITIO_CREATE_CASE_URL}"
-
-################################################################################
-# Endre API CONFIGURATION
-################################################################################
-ENDRE_API_BASE_URL="${ENDRE_API_BASE_URL}"
-ENDRE_API_USERNAME="${ENDRE_API_USERNAME}"
-ENDRE_API_PASSWORD="${ENDRE_API_PASSWORD}"
-
-
-################################################################################
-# SCANIA API CONFIGURATION
-################################################################################
-SCANIA_CLIENT_ID="${SCANIA_CLIENT_ID}"
-SCANIA_SECRET_KEY="${SCANIA_SECRET_KEY}"
-SCANIA_BASE_URL="${SCANIA_BASE_URL}"
-
-JOBYLON_API_URL="${JOBYLON_API_URL}"
+# Source Database: source_data / Wide World Importers (with service principal)
+AZURE_SOURCE_DATA_DATABASE_NAME="${AZURE_SOURCE_DATA_DATABASE_NAME}"
+AZURE_SOURCE_DATA_CLIENT_ID="${AZURE_SOURCE_DATA_CLIENT_ID}"
+AZURE_SOURCE_DATA_CLIENT_SECRET="${AZURE_SOURCE_DATA_CLIENT_SECRET}"
+AZURE_SOURCE_DATA_TENANT_ID="${AZURE_SOURCE_DATA_TENANT_ID}"

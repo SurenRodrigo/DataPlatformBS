@@ -156,18 +156,6 @@ try:
         print(f"  ⚠ Could not list tables: {e}")
     print()
     
-    # Test query 5: Check Sales.Invoices table specifically
-    print("Test 5: Checking Sales.Invoices table...")
-    try:
-        cursor.execute("""
-            SELECT COUNT(*) FROM Sales.Invoices
-        """)
-        count = cursor.fetchone()[0]
-        print(f"✓ Sales.Invoices exists with {count:,} rows")
-    except Exception as e:
-        print(f"  ✗ Could not access Sales.Invoices: {e}")
-    print()
-    
     # Close connection
     cursor.close()
     conn.close()
