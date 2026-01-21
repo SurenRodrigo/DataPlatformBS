@@ -29,9 +29,9 @@ AZURE_ENVIRONMENT=dev
 # Service Principal created for Azure SQL Database access (dataplatform)
 # Display Name: sp-dataplatform-sql
 # Object ID: be99dc09-21a7-486f-97cb-53d61cd2a7f1
-AZURE_CLIENT_ID=""
-AZURE_CLIENT_SECRET=""
-AZURE_TENANT_ID=""
+AZURE_DATAPLATFORM_DATA_CLIENT_ID=""
+AZURE_DATAPLATFORM_DATA_CLIENT_SECRET=""
+AZURE_DATAPLATFORM_DATA_TENANT_ID=""
 
 ################################################################################
 # AZURE SERVICE PRINCIPAL (for source_data Database Access)
@@ -64,9 +64,9 @@ AZURE_SQL_ADMIN_USER_SQL=""
 AZURE_SQL_ADMIN_PASSWORD=""
 
 # Service Principal for SQL Database Access
-# Use the service principal credentials above (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
+# Use the service principal credentials above (AZURE_DATAPLATFORM_DATA_CLIENT_ID, AZURE_DATAPLATFORM_DATA_CLIENT_SECRET, AZURE_DATAPLATFORM_DATA_TENANT_ID)
 # Connection string format for service principal:
-# Driver={ODBC Driver 18 for SQL Server};Server=tcp:${AZURE_SQL_SERVER_FQDN},${AZURE_SQL_PORT};Database=${AZURE_SQL_DATABASE_NAME};Uid=${AZURE_CLIENT_ID};Pwd=${AZURE_CLIENT_SECRET};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;Authentication=ActiveDirectoryServicePrincipal
+# Driver={ODBC Driver 18 for SQL Server};Server=tcp:${AZURE_SQL_SERVER_FQDN},${AZURE_SQL_PORT};Database=${AZURE_SQL_DATABASE_NAME};Uid=${AZURE_DATAPLATFORM_DATA_CLIENT_ID};Pwd=${AZURE_DATAPLATFORM_DATA_CLIENT_SECRET};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;Authentication=ActiveDirectoryServicePrincipal
 
 ################################################################################
 # OPTIONAL: ADDITIONAL AZURE CONFIGURATION

@@ -15,7 +15,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         software-properties-common \
         curl \
-        gnupg && \
+        gnupg \
+        ca-certificates && \
     add-apt-repository ppa:deadsnakes/ppa -y && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -32,7 +33,16 @@ RUN apt-get update && \
         libldap2-dev \
         libpq-dev \
         postgresql-client \
-        netcat-traditional && \
+        netcat-traditional \
+        unixodbc-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Microsoft ODBC Driver 18 for SQL Server (needed for Azure SQL Database connectivity)
+# This is required for pyodbc to compile and connect to Azure SQL Database
+RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /usr/share/keyrings/microsoft-prod.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/24.04/prod noble main" > /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && \
+    ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 && \
     rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
@@ -70,7 +80,8 @@ RUN python -m pip install --upgrade --no-cache-dir \
 RUN python -m pip install --no-cache-dir \
       psycopg2-binary \
       flask-cors \
-      gunicorn
+      gunicorn \
+      "pyodbc>=5.0.0"
 
 # Verify key versions in builder image
 RUN python -c "import numpy, pandas, pyarrow, importlib.metadata as m; \
@@ -92,7 +103,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         software-properties-common \
         curl \
-        gnupg && \
+        gnupg \
+        ca-certificates && \
     add-apt-repository ppa:deadsnakes/ppa -y && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -100,11 +112,23 @@ RUN apt-get update && \
         python3.11-venv \
         python3.11-distutils \
         postgresql-client \
-        netcat-traditional && \
+        netcat-traditional \
+        unixodbc && \
     # --- IMPORTANT: remove system-level cryptography so Docker Scout
     #               doesn't see the vulnerable 41.0.7 package ---
     apt-get purge -y python3-cryptography || true && \
     rm -rf /usr/lib/python3*/dist-packages/cryptography* && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install Microsoft ODBC Driver 18 for SQL Server (runtime)
+# Required for pyodbc to connect to Azure SQL Database
+RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /usr/share/keyrings/microsoft-prod.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/24.04/prod noble main" > /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && \
+    ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 && \
+    # Verify ODBC driver installation
+    echo "Installed ODBC drivers:" && odbcinst -q -d && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -148,11 +172,13 @@ ENV PYTHONPATH=/app
 USER superset
 
 # Final sanity checks in runtime image
-RUN python -c "import superset, pyarrow, psycopg2, numpy, pandas, importlib.metadata as m; \
+RUN python -c "import superset, pyarrow, psycopg2, pyodbc, numpy, pandas, importlib.metadata as m; \
 print('Superset dist version:', m.version('apache-superset')); \
 print('pyarrow version:', pyarrow.__version__); \
 print('numpy version:', numpy.__version__); \
 print('pandas version:', pandas.__version__); \
-print('psycopg2 installed OK')"
+print('psycopg2 installed OK'); \
+print('pyodbc version:', pyodbc.version); \
+print('ODBC drivers:', [d for d in pyodbc.drivers()])"
 
 CMD ["/usr/local/bin/superset_entrypoint.sh"]

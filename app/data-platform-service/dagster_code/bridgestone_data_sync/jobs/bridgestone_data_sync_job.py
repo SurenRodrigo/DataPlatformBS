@@ -1,5 +1,5 @@
 from dagster import define_asset_job
-from ..assets import hello_world_asset, sync_invoice_data, sync_credit_data, sync_direct_fin_data
+from ..assets import sync_invoice_data, sync_credit_data, sync_direct_fin_data
 
 # Define the job for the Bridgestone data sync pipeline
 bridgestone_data_sync_job = define_asset_job(

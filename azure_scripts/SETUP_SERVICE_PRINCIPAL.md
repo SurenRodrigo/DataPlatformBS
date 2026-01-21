@@ -9,13 +9,13 @@ This guide walks you through setting up a service principal to access your Azure
 - **App ID (Client ID)**: `8eb12cc4-0cd6-4f3f-b862-72f24b62478d`
 - **Object ID**: `be99dc09-21a7-486f-97cb-53d61cd2a7f1`
 - **Tenant ID**: `4a758f28-8613-4bc8-b9f2-bb78b961f784`
-- **Secret**: Stored in `.env` file (AZURE_CLIENT_SECRET)
+- **Secret**: Stored in `.env` file (AZURE_DATAPLATFORM_DATA_CLIENT_SECRET)
 
 ### Step 2: Service Principal Credentials Added to .env
 The service principal credentials have been added to `azure_scripts/.env`:
-- `AZURE_CLIENT_ID`
-- `AZURE_CLIENT_SECRET`
-- `AZURE_TENANT_ID`
+- `AZURE_DATAPLATFORM_DATA_CLIENT_ID`
+- `AZURE_DATAPLATFORM_DATA_CLIENT_SECRET`
+- `AZURE_DATAPLATFORM_DATA_TENANT_ID`
 
 ## 🔧 Next Steps: Grant Database Access
 
@@ -97,7 +97,7 @@ Once the database user is created, you can use this connection string format:
 
 **ODBC Connection String:**
 ```
-Driver={ODBC Driver 18 for SQL Server};Server=tcp:dataplatformpoc.database.windows.net,1433;Database=dataplatform;Uid=8eb12cc4-0cd6-4f3f-b862-72f24b62478d;Pwd={AZURE_CLIENT_SECRET};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;Authentication=ActiveDirectoryServicePrincipal
+Driver={ODBC Driver 18 for SQL Server};Server=tcp:dataplatformpoc.database.windows.net,1433;Database=dataplatform;Uid=8eb12cc4-0cd6-4f3f-b862-72f24b62478d;Pwd={AZURE_DATAPLATFORM_DATA_CLIENT_SECRET};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;Authentication=ActiveDirectoryServicePrincipal
 ```
 
 **Python (pyodbc) Example:**
@@ -112,8 +112,8 @@ connection_string = (
     f"Driver={{ODBC Driver 18 for SQL Server}};"
     f"Server=tcp:{os.getenv('AZURE_SQL_SERVER_FQDN')},{os.getenv('AZURE_SQL_PORT')};"
     f"Database={os.getenv('AZURE_SQL_DATABASE_NAME')};"
-    f"Uid={os.getenv('AZURE_CLIENT_ID')};"
-    f"Pwd={os.getenv('AZURE_CLIENT_SECRET')};"
+    f"Uid={os.getenv('AZURE_DATAPLATFORM_DATA_CLIENT_ID')};"
+    f"Pwd={os.getenv('AZURE_DATAPLATFORM_DATA_CLIENT_SECRET')};"
     f"Encrypt=yes;"
     f"TrustServerCertificate=no;"
     f"Connection Timeout=30;"
@@ -158,8 +158,8 @@ cd azure_scripts && source .env
 # Test with Azure CLI (if you have sqlcmd installed)
 sqlcmd -S $AZURE_SQL_SERVER_FQDN \
   -d $AZURE_SQL_DATABASE_NAME \
-  -U $AZURE_CLIENT_ID \
-  -P $AZURE_CLIENT_SECRET \
+  -U $AZURE_DATAPLATFORM_DATA_CLIENT_ID \
+  -P $AZURE_DATAPLATFORM_DATA_CLIENT_SECRET \
   -G \
   -Q "SELECT @@VERSION"
 ```

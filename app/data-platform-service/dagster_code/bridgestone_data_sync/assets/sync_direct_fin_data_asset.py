@@ -52,9 +52,9 @@ def sync_direct_fin_data(context: AssetExecutionContext):
     dest_config = {
         "server": os.getenv("AZURE_SQL_SERVER_FQDN"),
         "database": os.getenv("AZURE_SQL_DATABASE_NAME", "dataplatform"),
-        "client_id": os.getenv("AZURE_CLIENT_ID"),
-        "client_secret": os.getenv("AZURE_CLIENT_SECRET"),
-        "tenant_id": os.getenv("AZURE_TENANT_ID"),
+        "client_id": os.getenv("AZURE_DATAPLATFORM_DATA_CLIENT_ID"),
+        "client_secret": os.getenv("AZURE_DATAPLATFORM_DATA_CLIENT_SECRET"),
+        "tenant_id": os.getenv("AZURE_DATAPLATFORM_DATA_TENANT_ID"),
         "port": os.getenv("AZURE_SQL_PORT", "1433")
     }
     
@@ -66,9 +66,9 @@ def sync_direct_fin_data(context: AssetExecutionContext):
         'AZURE_SOURCE_DATA_TENANT_ID'
     ]
     required_dest_vars = [
-        'AZURE_CLIENT_ID', 
-        'AZURE_CLIENT_SECRET', 
-        'AZURE_TENANT_ID'
+        'AZURE_DATAPLATFORM_DATA_CLIENT_ID', 
+        'AZURE_DATAPLATFORM_DATA_CLIENT_SECRET', 
+        'AZURE_DATAPLATFORM_DATA_TENANT_ID'
     ]
     
     missing_vars = []
@@ -83,6 +83,10 @@ def sync_direct_fin_data(context: AssetExecutionContext):
     
     # SQL Query to combine invoice_data and credit_data
     # Credit data amounts are negated to allow proper aggregation (credits offset invoices)
+    # NOTE: Do NOT include GETDATE() or any time-varying columns in the query!
+    #       The checksum is calculated from ALL columns, so time-varying values
+    #       would make every sync produce different checksums (causing duplicates).
+    #       The MERGE operation automatically adds _sync_updated_at column.
     query = """
     SELECT 
         invoice_number,
@@ -103,7 +107,6 @@ def sync_direct_fin_data(context: AssetExecutionContext):
         cohort,
         ipc,
         dim,
-        GETDATE() AS sync_timestamp,
         'invoice' AS record_type
     FROM [pyairbyte_cache].[invoice_data]
 
@@ -128,7 +131,6 @@ def sync_direct_fin_data(context: AssetExecutionContext):
         cohort,
         NULL AS ipc,
         NULL AS dim,
-        GETDATE() AS sync_timestamp,
         'credit' AS record_type
     FROM [pyairbyte_cache].[credit_data]
     """
@@ -153,7 +155,7 @@ def sync_direct_fin_data(context: AssetExecutionContext):
             dest_config=dest_config,
             dest_schema="reporting",
             dest_table="financial_reporting_data",
-            merge_key_columns=["invoice_number", "record_type", "item_code", "customer_code"],
+            # merge_key_columns=["invoice_number", "record_type", "item_code", "customer_code"],
             batch_size=5000,
             validate_row_counts=True,
             chunk_size=2000,
