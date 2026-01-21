@@ -30,16 +30,16 @@ except ImportError:
 server = os.getenv('AZURE_SQL_SERVER_FQDN', 'dataplatformpoc.database.windows.net')
 database = os.getenv('AZURE_SQL_DATABASE_NAME', 'dataplatform')
 port = os.getenv('AZURE_SQL_PORT', '1433')
-client_id = os.getenv('AZURE_CLIENT_ID')
-client_secret = os.getenv('AZURE_CLIENT_SECRET')
-tenant_id = os.getenv('AZURE_TENANT_ID')
+client_id = os.getenv('AZURE_DATAPLATFORM_DATA_CLIENT_ID')
+client_secret = os.getenv('AZURE_DATAPLATFORM_DATA_CLIENT_SECRET')
+tenant_id = os.getenv('AZURE_DATAPLATFORM_DATA_TENANT_ID')
 
 # Validate required variables
 if not all([client_id, client_secret, tenant_id]):
     print("ERROR: Missing required environment variables:")
-    print(f"  AZURE_CLIENT_ID: {'✓' if client_id else '✗'}")
-    print(f"  AZURE_CLIENT_SECRET: {'✓' if client_secret else '✗'}")
-    print(f"  AZURE_TENANT_ID: {'✓' if tenant_id else '✗'}")
+    print(f"  AZURE_DATAPLATFORM_DATA_CLIENT_ID: {'✓' if client_id else '✗'}")
+    print(f"  AZURE_DATAPLATFORM_DATA_CLIENT_SECRET: {'✓' if client_secret else '✗'}")
+    print(f"  AZURE_DATAPLATFORM_DATA_TENANT_ID: {'✓' if tenant_id else '✗'}")
     sys.exit(1)
 
 print("=" * 60)

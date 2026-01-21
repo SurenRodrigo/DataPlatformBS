@@ -134,14 +134,14 @@ if [ "$SUBSCRIPTION_MATCH_COUNT" != "1" ]; then
             print_error "Subscription name not found: $AZURE_SUBSCRIPTION_NAME"
             print_error "Available subscriptions:"
             az account list --query "[].{Name:name, ID:id}" -o table
-            print_error "Please run: az login --tenant $AZURE_TENANT_ID"
+            print_error "Please run: az login --tenant $AZURE_DATAPLATFORM_DATA_TENANT_ID"
             exit 1
         fi
     else
         print_error "No AZURE_SUBSCRIPTION_NAME provided as fallback."
         print_error "Available subscriptions:"
         az account list --query "[].{Name:name, ID:id}" -o table
-        print_error "Please run: az login --tenant $AZURE_TENANT_ID"
+        print_error "Please run: az login --tenant $AZURE_DATAPLATFORM_DATA_TENANT_ID"
         exit 1
     fi
 fi

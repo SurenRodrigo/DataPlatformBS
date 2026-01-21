@@ -155,9 +155,9 @@ AZURE_SQL_PORT=1433
 
 # Destination Database: dataplatform (with service principal)
 AZURE_SQL_DATABASE_NAME=dataplatform
-AZURE_CLIENT_ID=
-AZURE_CLIENT_SECRET=
-AZURE_TENANT_ID=
+AZURE_DATAPLATFORM_DATA_CLIENT_ID=
+AZURE_DATAPLATFORM_DATA_CLIENT_SECRET=
+AZURE_DATAPLATFORM_DATA_TENANT_ID=
 
 # Source Database: source_data / Wide World Importers (with service principal)
 AZURE_SOURCE_DATA_DATABASE_NAME=source_data
