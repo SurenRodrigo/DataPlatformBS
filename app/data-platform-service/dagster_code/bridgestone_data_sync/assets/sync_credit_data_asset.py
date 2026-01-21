@@ -16,23 +16,39 @@ from pyairbyte.utils.excel_to_db_writer import ExcelToDbWriter
 )
 def sync_credit_data(context: AssetExecutionContext):
     """
-    Dagster asset to sync credit data from Excel file to PostgreSQL credit_data table.
+    Dagster asset to sync credit data from Excel file to Azure SQL Database credit_data table.
     Reads from external Excel file and writes to credit_data table with field mapping.
+    Uses Entra ID Service Principal authentication to connect to Azure SQL.
     Executes after sync_invoice_data asset.
     """
-    context.log.info("Starting Bridgestone credit data sync from Excel to PostgreSQL...")
+    context.log.info("Starting Bridgestone credit data sync from Excel to Azure SQL Database...")
     
     try:
-        # Read database connection configuration from environment variables
-        db_host = os.getenv("APPBASE_CONFIG_DB_HOST", "db")
-        db_port = int(os.getenv("APPBASE_CONFIG_DB_PORT", "5432"))
-        db_user = os.getenv("APPBASE_CONFIG_DB_USER", "dataplatuser")
-        db_password = os.getenv("APPBASE_CONFIG_DB_PASSWORD", "dataplatpassword")
-        db_name = os.getenv("APPBASE_CONFIG_DB_NAME", "dataplatform")
+        # Read Azure SQL connection configuration from environment variables
+        # Server configuration
+        azure_sql_server = os.getenv("AZURE_SQL_SERVER_FQDN")
+        azure_sql_port = os.getenv("AZURE_SQL_PORT", "1433")
+        
+        # Database name (source_data)
+        azure_db_name = os.getenv("AZURE_SOURCE_DATA_DATABASE_NAME")
+        
+        # Entra ID Service Principal credentials
+        azure_client_id = os.getenv("AZURE_SOURCE_DATA_CLIENT_ID")
+        azure_client_secret = os.getenv("AZURE_SOURCE_DATA_CLIENT_SECRET")
+        azure_tenant_id = os.getenv("AZURE_SOURCE_DATA_TENANT_ID")
         
         # Validate required configuration
-        if not all([db_host, db_port, db_user, db_password, db_name]):
-            raise ValueError("Missing required database configuration.")
+        required_vars = {
+            "AZURE_SQL_SERVER_FQDN": azure_sql_server,
+            "AZURE_SOURCE_DATA_DATABASE_NAME": azure_db_name,
+            "AZURE_SOURCE_DATA_CLIENT_ID": azure_client_id,
+            "AZURE_SOURCE_DATA_CLIENT_SECRET": azure_client_secret,
+            "AZURE_SOURCE_DATA_TENANT_ID": azure_tenant_id
+        }
+        
+        missing_vars = [k for k, v in required_vars.items() if not v]
+        if missing_vars:
+            raise ValueError(f"Missing required Azure SQL configuration: {missing_vars}")
         
         # Excel file path (mounted in container at /app/external_files)
         excel_path = "/app/external_files/brige_stone_source_credit_data_v3.xlsx"
@@ -61,24 +77,28 @@ def sync_credit_data(context: AssetExecutionContext):
             "Cohort": "cohort"
         }
         
+        context.log.info(f"Azure SQL Server: {azure_sql_server}")
+        context.log.info(f"Azure SQL Database: {azure_db_name}")
         context.log.info(f"Excel file path: {excel_path}")
         context.log.info(f"Sheet name: {sheet_name}")
         context.log.info(f"Target table: {schema_name}.{table_name}")
         context.log.info(f"Field mapping: {len(field_mapping)} columns")
+        context.log.info("Using Entra ID Service Principal authentication")
         
-        # Create PostgreSQL connection config
+        # Create Azure SQL connection config with Service Principal authentication
         connection_config = {
-            "host": db_host,
-            "port": db_port,
-            "database": db_name,
-            "username": db_user,
-            "password": db_password,
+            "server": azure_sql_server,
+            "port": azure_sql_port,
+            "database": azure_db_name,
+            "client_id": azure_client_id,
+            "client_secret": azure_client_secret,
+            "tenant_id": azure_tenant_id,
             "schema": schema_name
         }
         
-        # Initialize ExcelToDbWriter
+        # Initialize ExcelToDbWriter for MSSQL with Entra ID authentication
         writer = ExcelToDbWriter(
-            dbms_type="postgresql",
+            dbms_type="mssql",
             connection_config=connection_config,
             field_mapping=field_mapping
         )
@@ -120,6 +140,10 @@ def sync_credit_data(context: AssetExecutionContext):
             "table_created": MetadataValue.bool(table_created),
             "errors_count": MetadataValue.int(len(errors)),
             "warnings_count": MetadataValue.int(len(warnings)),
+            "database_type": MetadataValue.text("Azure SQL (MSSQL)"),
+            "azure_server": MetadataValue.text(azure_sql_server),
+            "azure_database": MetadataValue.text(azure_db_name),
+            "auth_method": MetadataValue.text("Entra ID Service Principal"),
             "schema": MetadataValue.text(schema_name),
             "table": MetadataValue.text(table_name),
             "excel_file": MetadataValue.text(excel_path),
