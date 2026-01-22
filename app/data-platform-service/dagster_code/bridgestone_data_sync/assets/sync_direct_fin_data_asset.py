@@ -89,7 +89,6 @@ def sync_direct_fin_data(context: AssetExecutionContext):
     #       The MERGE operation automatically adds _sync_updated_at column.
     query = """
     SELECT 
-        invoice_number,
         customer_name,
         item_code,
         seller_id,
@@ -108,16 +107,15 @@ def sync_direct_fin_data(context: AssetExecutionContext):
         ipc,
         dim,
         'invoice' AS record_type
-    FROM [pyairbyte_cache].[invoice_data]
+    FROM [pyairbyte_cache].[invoice_data_2026]
 
     UNION ALL
 
     SELECT 
-        invoice_number,
         customer_name,
         item_code,
         seller_id,
-        NULL AS seller_name,
+        seller_name,
         quantity,
         -line_total AS line_total,
         -gross_profit AS gross_profit,
@@ -132,7 +130,7 @@ def sync_direct_fin_data(context: AssetExecutionContext):
         NULL AS ipc,
         NULL AS dim,
         'credit' AS record_type
-    FROM [pyairbyte_cache].[credit_data]
+    FROM [pyairbyte_cache].[credit_data_2026]
     """
     
     context.log.info(f"Source Database: {source_config['database']}")
@@ -154,11 +152,11 @@ def sync_direct_fin_data(context: AssetExecutionContext):
             source_query=query,
             dest_config=dest_config,
             dest_schema="reporting",
-            dest_table="financial_reporting_data",
+            dest_table="financial_reporting_data_2026",
             # merge_key_columns=["invoice_number", "record_type", "item_code", "customer_code"],
             batch_size=5000,
             validate_row_counts=True,
-            chunk_size=2000,
+            chunk_size=5000,
             max_workers=4,
             use_streaming=True,
             connection_retry_count=3,

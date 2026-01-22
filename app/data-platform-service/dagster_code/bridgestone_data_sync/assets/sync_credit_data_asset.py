@@ -51,30 +51,31 @@ def sync_credit_data(context: AssetExecutionContext):
             raise ValueError(f"Missing required Azure SQL configuration: {missing_vars}")
         
         # Excel file path (mounted in container at /app/external_files)
-        excel_path = "/app/external_files/brige_stone_source_credit_data_v3.xlsx"
-        sheet_name = "CreditData"  # Assuming sheet name is "CreditData" - adjust if different
+        excel_path = "/app/external_files/StaticMasterDataset-Kredit.xlsx"
+        sheet_name = "Kredit_values"  # Assuming sheet name is "CreditData" - adjust if different
         
         # Database configuration
         schema_name = "pyairbyte_cache"
-        table_name = "credit_data"
+        table_name = "credit_data_2026"
         
         # Field mapping from Excel columns to table columns
+        
         field_mapping = {
-            "Invoice_Number": "invoice_number",
-            "Customer_Name": "customer_name",
-            "Item_Code": "item_code",
-            "Seller_Id": "seller_id",
+            "Kunde-/leverandørnavn": "customer_name",
+            "ItemCode": "item_code",
+            "Selger": "seller_id",
+            "SlpName": "seller_name",
             "Quantity": "quantity",
-            "Line_Total": "line_total",
-            "Gross_Profit": "gross_profit",
-            "Customer_Code": "customer_code",
-            "Items_Group_Name": "items_group_name",
-            "Posted_Date": "posted_date",
-            "End_Of_Month_Bucket": "end_of_month_bucket",
-            "Item_Category": "item_category",
-            "Year": "year",
-            "Customer_Group": "customer_group",
-            "Cohort": "cohort"
+            "LineTotal": "line_total",
+            "GrssProfit": "gross_profit",
+            "Kunde-/leverandørkode": "customer_code",
+            "ItmsGrpNam": "items_group_name",
+            "Date__Correct": "posted_date",
+            "EOM_Bucket": "end_of_month_bucket",
+            "Varekategori": "item_category",
+            "År": "year",
+            "Kundegruppe": "customer_group",
+            "Kohort": "cohort"
         }
         
         context.log.info(f"Azure SQL Server: {azure_sql_server}")
